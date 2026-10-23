@@ -156,7 +156,8 @@ It built the optional components, ran selected component checks, smoke-tested
 the base voice core/BTS configuration and compiled the gateway protocol probe.
 That hosted-VM run used the documented functional timer checks; it did not
 open an SDR, configure NAT or test a handset. The subsequent route-refresh
-change is covered by local unit checks, not this earlier native CI run.
+change passed the [offline CI checks on macOS and Linux](https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39955445149)
+at `129c7a8`; the later MTU default change passed the same 23 local tests.
 
 All three packet daemons parsed their rendered configurations. The seven-child
 core connected both MSC and SGSN to HLR. With the LimeSDR open and RF locked,
@@ -184,8 +185,25 @@ Disabling the host VPN changed the default interface from a VPN tunnel to
 Wi-Fi while the running NAT still referenced the previous interface. Gateway
 status detected the mismatch. The new `network refresh` command retargets only
 the lab NAT and clears connection states originating in the lab pool without
-restarting GGSN or phone PDP contexts. Its live application and a subsequent
-phone page test are pending at this snapshot.
+restarting GGSN or phone PDP contexts. Its live application succeeded: the
+gateway matched the new Wi-Fi route, GGSN retained its PID and one phone retained
+its IPv4 PDP context. The operator still reported no page load after this step.
+
+The subsequent packet-header comparison localized a second problem. The phone
+advertised TCP MSS 1410 on Wi-Fi while GGSN's tunnel MTU was 1280. External TCP
+handshakes succeeded, but 1450-byte DF replies arriving on Wi-Fi did not appear
+on the phone tunnel. A smaller final segment did reach it; the phone's selective
+acknowledgement still reported the missing earlier sequence range. The tunnel's
+PF MSS rule reduced the server's SYN/ACK MSS toward the phone, but did not
+reduce the phone's SYN MSS observed on Wi-Fi. Capture counters reported no
+kernel drops. A small Mac-to-phone ping also completed in about 0.94 seconds.
+
+Applying MTU 1500 to the running GGSN APN and tunnel, matching the current Wi-Fi
+uplink, required no service restart. The previously stalled TCP connection
+then exchanged acknowledged data, and handset downlink counters advanced by
+over 200 KB. The private profile and public example now save MTU 1500. A fresh
+phone page result after this correction remains pending; these observations
+do not establish sustained throughput or general VPN compatibility.
 
 A synthetic native `libgtp` probe subsequently obtained a PDP address, received
 a DNS A response, completed a TCP handshake and received an HTTP 403 response

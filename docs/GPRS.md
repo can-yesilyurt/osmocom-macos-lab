@@ -25,7 +25,7 @@ disabled. The optional additional dependency is Homebrew `c-ares`.
 
 Set `gprs_enabled` to `true` in the private profile and run `./lab configure`.
 The default APN is `osmo`, address pool `10.45.0.0/24`, gateway `10.45.0.1`, DNS
-`1.1.1.1` / `8.8.8.8`, and announced MTU 1280. Configure the test handset to use
+`1.1.1.1` / `8.8.8.8`, and announced/tunnel MTU 1500. Configure the test handset to use
 the same APN with no username or password. Phones may hide the APN menu under
 their SIM's carrier settings, so handset provisioning must also be checked.
 
@@ -80,6 +80,16 @@ sudo ./lab network refresh
 Refresh replaces only the lab anchor's rules and resets connection states
 originating in the lab's data pool, so retry the page afterward. It preserves
 the GGSN tunnel, phone PDP sessions, PF reference and forwarding recovery record.
+
+Keep the 1500-byte lab tunnel for the tested 1500-byte Wi-Fi uplink. In the
+handset test, reducing the tunnel to 1280 while the phone still advertised TCP
+MSS 1410 caused 1450-byte DF replies to arrive on Wi-Fi without reaching the
+phone tunnel. Small packets and TCP handshakes still worked. The tunnel's PF
+MSS rule reduced the server's advertised MSS toward the phone, but did not
+reduce the phone's advertised MSS observed on Wi-Fi. An announced APN MTU and
+this PF rule therefore do not establish working path-MTU discovery in both
+directions. Check larger transfers after changing MTU or VPN paths; a smaller
+MTU is not automatically a safer setting.
 
 PF rules live only in `com.apple/osmocom-lab`, referenced through the existing
 Apple wildcard hooks. The helper never loads, flushes or disables the main PF
