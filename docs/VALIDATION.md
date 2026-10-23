@@ -6,10 +6,11 @@ The portable recipe in this repository subsequently rebuilt the same pinned
 component versions in a fresh directory. Its automated runtime test covers
 core links and BTS configuration parsing without opening the radio.
 
-These are separate observations: the handset session used the original staged
-native build; the fresh portable build has passed software/core checks but has
-not had a second over-the-air handset acceptance run. No CI result is inferred
-from the local build. The machine-readable snapshot is
+These are separate observations: the successful call/SMS session used the
+original staged native build. The portable packet profile subsequently reached
+confirmed circuit-switched registration for both phones, but call/SMS regression
+and handset packet-data acceptance on that profile remain pending. No CI result
+is inferred from the local build. The machine-readable voice snapshot is
 [`summary.json`](../validation/2026-10-23/summary.json).
 
 ## Host and dependencies
@@ -155,8 +156,18 @@ interface, enabled forwarding and installed NAT in its own PF anchor while
 preserving the default route.
 
 The carrier subsequently reached Enabled / Unlocked / OK with the PHY connected,
-and PCU reported PDCH enabled on timeslots 6 and 7. Handset attachment and data
-acceptance on this packet profile are still pending.
+and PCU reported PDCH enabled on timeslots 6 and 7. Both test phones appeared in
+MSC's subscriber cache with radio contact confirmed, HLR data confirmed and an
+attached use. This verifies circuit-switched registration on the portable
+profile; calls/SMS have not yet been repeated on this profile.
+
+The SGSN received handset routing-area updates but had no matching mobility
+contexts. It sent cause 10 (implicitly detached) rejections requesting a fresh
+GMM attachment. At this snapshot there were no GMM Attach Requests, MM contexts
+or PDP contexts. Packet registration and internet acceptance therefore remain
+pending. The test SIM hides its iPhone APN menu, so the private profile enables
+the documented wildcard APN mapping; this does not resolve a failure before GMM
+attachment. Subscriber identifiers and raw signaling remain private.
 
 A synthetic native `libgtp` probe subsequently obtained a PDP address, received
 a DNS A response, completed a TCP handshake and received an HTTP 403 response

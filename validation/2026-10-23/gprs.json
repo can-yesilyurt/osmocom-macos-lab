@@ -64,6 +64,15 @@
     "independent_rf_measurement": false
   },
   "handset": {
+    "cs_registration": "two_subscribers_confirmed_by_radio_and_hlr",
+    "calls_sms_regression_on_packet_profile": "not_yet_run",
+    "packet_signaling": "routing_area_updates_received",
+    "routing_area_update_reject_cause": 10,
+    "gmm_attach_request_observed": false,
+    "mm_contexts": 0,
+    "pdp_contexts": 0,
+    "apn_menu": "unavailable_on_test_iphone",
+    "wildcard_apn_mapping_enabled_for_test": true,
     "packet_registration": "pending",
     "pdp_activation": "pending",
     "internet_request": "pending"
