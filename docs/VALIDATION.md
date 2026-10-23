@@ -147,6 +147,16 @@ The combined build report contains **141 commands with exit code 0**, including
 PCU 11 passed / 3 skipped; SGSN 5 passed / 2 skipped. The skips require GNU linker
 wrapping, and external Python/TTCN integration suites were not run.
 Repository orchestration checks passed 19 tests after the packet extension.
+Four additional checks for VPN-route refresh, scoped state removal, rollback
+and stale ownership brought the local suite to 23 passing tests.
+
+The clean ARM64 [native GPRS CI run](https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39952921147)
+also passed at commit `3aa0a20f0e906410b4afe7ce24dc1b86df759e9f`.
+It built the optional components, ran selected component checks, smoke-tested
+the base voice core/BTS configuration and compiled the gateway protocol probe.
+That hosted-VM run used the documented functional timer checks; it did not
+open an SDR, configure NAT or test a handset. The subsequent route-refresh
+change is covered by local unit checks, not this earlier native CI run.
 
 All three packet daemons parsed their rendered configurations. The seven-child
 core connected both MSC and SGSN to HLR. With the LimeSDR open and RF locked,
@@ -161,13 +171,21 @@ MSC's subscriber cache with radio contact confirmed, HLR data confirmed and an
 attached use. This verifies circuit-switched registration on the portable
 profile; calls/SMS have not yet been repeated on this profile.
 
-The SGSN received handset routing-area updates but had no matching mobility
-contexts. It sent cause 10 (implicitly detached) rejections requesting a fresh
-GMM attachment. At this snapshot there were no GMM Attach Requests, MM contexts
-or PDP contexts. Packet registration and internet acceptance therefore remain
-pending. The test SIM hides its iPhone APN menu, so the private profile enables
-the documented wildcard APN mapping; this does not resolve a failure before GMM
-attachment. Subscriber identifiers and raw signaling remain private.
+Initially, SGSN received handset routing-area updates without matching mobility
+contexts and sent cause 10 (implicitly detached) rejections. After the phone
+retry, both handsets reached GMM Registered.NORMAL and one had an active IPv4
+PDP context with user-data counters advancing in both directions. Its requested
+APN was `internet`, mapped by the configured fallback to the lab's `osmo` APN.
+The operator reported a G indicator but no page load. This verifies real-handset
+packet registration and PDP activation, while internet page acceptance remains
+incomplete. Subscriber identifiers and raw signaling remain private.
+
+Disabling the host VPN changed the default interface from a VPN tunnel to
+Wi-Fi while the running NAT still referenced the previous interface. Gateway
+status detected the mismatch. The new `network refresh` command retargets only
+the lab NAT and clears connection states originating in the lab pool without
+restarting GGSN or phone PDP contexts. Its live application and a subsequent
+phone page test are pending at this snapshot.
 
 A synthetic native `libgtp` probe subsequently obtained a PDP address, received
 a DNS A response, completed a TCP handshake and received an HTTP 403 response

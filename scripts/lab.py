@@ -53,7 +53,7 @@ def main():
     probe.add_argument("--http",action="store_true",help="test DNS, TCP and HTTP instead of ICMP")
     probe.add_argument("--host",default="neverssl.com",help="HTTP destination; used with --http")
     net = sub.add_parser("network",help="temporary GGSN tunnel and scoped macOS internet NAT")
-    net.add_argument("action", choices=["start","stop","status"])
+    net.add_argument("action", choices=["start","refresh","stop","status"])
     rf = sub.add_parser("rf",help="explicit RF control on the already running lab")
     rf.add_argument("action",choices=["on","off"])
     args = parser.parse_args()

@@ -1,6 +1,6 @@
 """Temporary macOS GGSN tunnel, IPv4 forwarding and scoped PF NAT.
 
-Start/stop require root. No persistent system configuration is installed.
+Start/refresh/stop require root. No persistent system configuration is installed.
 The main PF ruleset is never loaded, flushed or disabled by this helper.
 """
 import fcntl
@@ -222,6 +222,71 @@ def start(p):
         raise
 
 
+def refresh():
+    """Follow a changed default route without restarting GGSN or the radio."""
+    state = state_dir()
+    path = state / "run/network.json"
+    if not path.is_file():
+        raise ValueError("Start the GPRS internet gateway first")
+    record = json.loads(path.read_text())
+    if (record.get("anchor") != ANCHOR or record.get("status") != "ready"
+            or not record.get("anchor_loaded") or not owned_ggsn(record)):
+        raise ValueError("No ready GGSN/PF gateway owned by this checkout")
+    network = ipaddress.IPv4Network(record["data_network"],strict=True)
+    if not 24 <= network.prefixlen <= 29 or not any(network.subnet_of(ipaddress.IPv4Network(n))
+            for n in ("10.0.0.0/8","172.16.0.0/12","192.168.0.0/16")):
+        raise ValueError("Invalid saved lab data subnet")
+    blocks = interfaces()
+    tunnel = record["tunnel"]
+    gateway = str(network.network_address+1)
+    if not re.search(r"\binet "+re.escape(gateway)+r"\s",blocks.get(tunnel,"")):
+        raise ValueError("The owned GGSN tunnel no longer has its expected address")
+    uplink = default_interface()
+    mtu_matches = [re.search(r"\bmtu ([0-9]+)",blocks.get(name,"")) for name in (tunnel,uplink)]
+    if not all(mtu_matches):
+        raise ValueError("Cannot determine GGSN and internet interface MTUs")
+    mtu = min(int(match[1]) for match in mtu_matches)
+    if mtu < 576:
+        raise ValueError("Default uplink MTU is too small for this IPv4 profile")
+    nat = run(["/sbin/pfctl","-sn"])
+    filtering = run(["/sbin/pfctl","-sr"])
+    if 'nat-anchor "com.apple/*"' not in nat or 'scrub-anchor "com.apple/*"' not in filtering:
+        raise ValueError("The live PF rules lack the Apple wildcard hooks; no rules were changed")
+    if run(["/usr/sbin/sysctl","-n","net.inet.ip.forwarding"]).strip() != "1":
+        raise ValueError("IPv4 forwarding is no longer enabled; inspect the gateway before refreshing")
+    rules_path = state / "run/pf-gprs.conf"
+    if not rules_path.is_file():
+        raise ValueError("The previous lab PF rules are missing; no rules were changed")
+    candidate = state / "run/pf-gprs-refresh.conf"
+    candidate.write_text(pf_rules(str(network),tunnel,uplink,mtu))
+    candidate.chmod(0o600)
+    os.chown(candidate,int(record["uid"]),int(record["gid"]))
+    loaded = False
+    try:
+        run(["/sbin/pfctl","-a",ANCHOR,"-n","-f",str(candidate)])
+        run(["/sbin/pfctl","-a",ANCHOR,"-f",str(candidate)])
+        loaded = True
+        if default_interface() != uplink:
+            raise RuntimeError("Default internet route changed during refresh")
+        updated = dict(record,uplink=uplink)
+        save_record(updated)
+        candidate.replace(rules_path)
+    except BaseException:
+        if loaded:
+            run(["/sbin/pfctl","-a",ANCHOR,"-f",str(rules_path)])
+            save_record(record)
+        raise
+    finally:
+        candidate.unlink(missing_ok=True)
+    # Existing NAT states can retain the old interface's translated address.
+    # Reset only flows originating in the owned lab pool, not the Mac's flows.
+    run(["/sbin/pfctl","-k",str(network)])
+    print(json.dumps({"status":"ready","data_tunnel":tunnel,
+                      "previous_internet_interface":record["uplink"],
+                      "internet_interface":uplink,"data_network":str(network),
+                      "lab_connection_states_reset":True,"ggsn_restarted":False},indent=2))
+
+
 def status():
     path = state_dir() / "run/network.json"
     if not path.exists():
@@ -229,18 +294,20 @@ def status():
         return 1
     record = json.loads(path.read_text())
     alive = owned_ggsn(record)
-    print(json.dumps({"status":record.get("status"),"ggsn_running":alive,
+    current = default_interface()
+    unchanged = current==record.get("uplink")
+    print(json.dumps({"status":record.get("status") if unchanged else "needs_refresh","ggsn_running":alive,
                       "data_tunnel":record.get("tunnel"),"internet_interface":record.get("uplink"),
-                      "default_route_unchanged":default_interface()==record.get("uplink"),
+                      "current_internet_interface":current,"default_route_unchanged":unchanged,
                       "ipv4_forwarding":run(["/usr/sbin/sysctl","-n","net.inet.ip.forwarding"]).strip()},indent=2))
-    return 0 if alive else 1
+    return 0 if alive and unchanged else 1
 
 
 def network(action):
     if action=="status":
         return status()
     if os.geteuid()!=0:
-        raise ValueError("Network start/stop require administrator authentication: sudo ./lab network "+action)
+        raise ValueError("Network start/refresh/stop require administrator authentication: sudo ./lab network "+action)
     os.umask(0o077)
     p = require_config() if action=="start" else None
     if action=="stop" and not (state_dir() / "run/network.json").exists():
@@ -250,6 +317,8 @@ def network(action):
         fcntl.flock(lock,fcntl.LOCK_EX | fcntl.LOCK_NB)
         if action=="start":
             start(p)
+        elif action=="refresh":
+            refresh()
         elif action=="stop":
             path = state_dir() / "run/network.json"
             if not path.exists():
@@ -261,5 +330,5 @@ def network(action):
             cleanup(record)
             print("GPRS gateway stopped; prior forwarding and PF reference restored")
         else:
-            raise ValueError("Network action must be start, stop or status")
+            raise ValueError("Network action must be start, refresh, stop or status")
     return 0

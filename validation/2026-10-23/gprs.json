@@ -1,6 +1,6 @@
 {
   "date": "2026-10-23",
-  "status": "experimental_packet_profile_handset_acceptance_pending",
+  "status": "experimental_handset_pdp_active_internet_page_acceptance_pending",
   "build": {
     "commands_total": 141,
     "packet_commands_added": 18,
@@ -22,8 +22,18 @@
       "skipped": 2
     },
     "orchestration": {
-      "passed": 19
+      "passed": 23
     }
+  },
+  "native_gprs_ci": {
+    "commit": "3aa0a20f0e906410b4afe7ce24dc1b86df759e9f",
+    "status": "passed",
+    "url": "https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39952921147",
+    "timer_checks": "functional",
+    "radio_tested": false,
+    "nat_tested": false,
+    "handset_tested": false,
+    "covers_subsequent_route_refresh_change": false
   },
   "control_plane": {
     "msc_hlr": "connected",
@@ -39,6 +49,13 @@
     "nat_scoped_to_data_pool": true,
     "default_route_preserved": true,
     "original_firewall_mode_restored": true
+  },
+  "route_change": {
+    "trigger": "operator_disabled_vpn",
+    "stale_nat_detected": true,
+    "current_default_is_wifi": true,
+    "refresh_unit_checks": "passed",
+    "live_refresh": "pending_administrator_command"
   },
   "synthetic_probe": {
     "real_subscribers_used": false,
@@ -68,14 +85,18 @@
     "calls_sms_regression_on_packet_profile": "not_yet_run",
     "packet_signaling": "routing_area_updates_received",
     "routing_area_update_reject_cause": 10,
-    "gmm_attach_request_observed": false,
-    "mm_contexts": 0,
-    "pdp_contexts": 0,
+    "gmm_attach_request_observed": true,
+    "mm_contexts": 2,
+    "pdp_contexts": 1,
     "apn_menu": "unavailable_on_test_iphone",
     "wildcard_apn_mapping_enabled_for_test": true,
-    "packet_registration": "pending",
-    "pdp_activation": "pending",
-    "internet_request": "pending"
+    "packet_registration": "passed_two_handsets",
+    "pdp_activation": "passed_one_handset",
+    "requested_apn": "internet",
+    "ggsn_apn_in_use": "osmo",
+    "user_data_counters_both_directions": true,
+    "g_indicator": "operator_reported",
+    "internet_request": "page_did_not_load_before_route_refresh"
   },
   "cleanup": {
     "unit_scope_check": "passed",

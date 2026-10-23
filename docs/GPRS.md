@@ -69,7 +69,17 @@ The helper checks subnet overlap and existing ports, creates loopback alias
 and enables IPv4 forwarding. It applies NAT only to the configured data subnet
 through the Mac's current default IPv4 interface. If that is a VPN tunnel, that
 tunnel is used; the helper does not select a physical interface to bypass it.
-Restart the gateway if the default route or VPN changes.
+If the default route or VPN changes, `network status` reports `needs_refresh`.
+Follow the new default interface without restarting GGSN, SGSN or the radio:
+
+```sh
+sudo ./lab network refresh
+./lab network status
+```
+
+Refresh replaces only the lab anchor's rules and resets connection states
+originating in the lab's data pool, so retry the page afterward. It preserves
+the GGSN tunnel, phone PDP sessions, PF reference and forwarding recovery record.
 
 PF rules live only in `com.apple/osmocom-lab`, referenced through the existing
 Apple wildcard hooks. The helper never loads, flushes or disables the main PF

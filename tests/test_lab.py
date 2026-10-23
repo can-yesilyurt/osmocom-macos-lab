@@ -124,6 +124,85 @@ class LocalState(unittest.TestCase):
             self.assertIn(["/usr/sbin/sysctl","-w","net.inet.ip.forwarding=0"],calls)
             self.assertFalse(any("-d" in c or "-F" in c for c in calls))
 
+    def gateway_fixture(self):
+        self.change(gprs_enabled=True)
+        self.render()
+        state = common.state_dir()
+        record = dict(anchor=network.ANCHOR,anchor_loaded=True,status="ready",
+                      uid=os.getuid(),gid=os.getgid(),ggsn_pid=12345,
+                      uplink="utun4",tunnel="utun5",data_network="10.45.0.0/24",
+                      previous_forwarding="0",forwarding_changed=True,pf_token="1234")
+        common.write_json(state / "run/network.json",record)
+        rules = state / "run/pf-gprs.conf"
+        rules.write_text(network.pf_rules(record["data_network"],"utun5","utun4",1280))
+        blocks = {"utun5":"utun5: flags=8051 mtu 1280\n inet 10.45.0.1 netmask 0xffffff00\n",
+                  "en0":"en0: flags=8863 mtu 1500\n inet 192.168.1.2 netmask 0xffffff00\n"}
+        return record,rules,blocks
+
+    @staticmethod
+    def gateway_command(args):
+        if args == ["/sbin/pfctl","-sn"]: return 'nat-anchor "com.apple/*"\n'
+        if args == ["/sbin/pfctl","-sr"]: return 'scrub-anchor "com.apple/*"\n'
+        if args == ["/usr/sbin/sysctl","-n","net.inet.ip.forwarding"]: return "1\n"
+        return ""
+
+    def test_gateway_refresh_follows_vpn_disconnect_without_restarting_sessions(self):
+        record,rules,blocks = self.gateway_fixture()
+        with mock.patch.object(network,"owned_ggsn",return_value=True), \
+             mock.patch.object(network,"interfaces",return_value=blocks), \
+             mock.patch.object(network,"default_interface",return_value="en0"), \
+             mock.patch.object(network,"run",side_effect=self.gateway_command) as run, \
+             mock.patch.object(os,"chown"), mock.patch.object(os,"kill") as kill, \
+             contextlib.redirect_stdout(io.StringIO()):
+            network.refresh()
+        saved=json.loads((common.state_dir() / "run/network.json").read_text())
+        self.assertEqual(saved,{**record,"uplink":"en0"})
+        self.assertIn("nat on en0",rules.read_text())
+        calls=[c.args[0] for c in run.call_args_list]
+        self.assertIn(["/sbin/pfctl","-k","10.45.0.0/24"],calls)
+        for command in calls:
+            if "-f" in command:
+                self.assertEqual(command[:3],["/sbin/pfctl","-a",network.ANCHOR])
+        self.assertFalse(any("-F" in c or "-d" in c or "-E" in c or "-w" in c for c in calls))
+        kill.assert_not_called()
+
+    def test_gateway_refresh_rolls_back_when_default_route_changes_mid_update(self):
+        record,rules,blocks = self.gateway_fixture()
+        original=rules.read_text()
+        with mock.patch.object(network,"owned_ggsn",return_value=True), \
+             mock.patch.object(network,"interfaces",return_value=blocks), \
+             mock.patch.object(network,"default_interface",side_effect=["en0","utun7"]), \
+             mock.patch.object(network,"run",side_effect=self.gateway_command) as run, \
+             mock.patch.object(os,"chown"):
+            with self.assertRaisesRegex(RuntimeError,"changed during refresh"):
+                network.refresh()
+        self.assertEqual(json.loads((common.state_dir() / "run/network.json").read_text()),record)
+        self.assertEqual(rules.read_text(),original)
+        self.assertIn(mock.call(["/sbin/pfctl","-a",network.ANCHOR,"-f",str(rules)]),run.call_args_list)
+        self.assertFalse(any("-k" in c.args[0] for c in run.call_args_list))
+
+    def test_gateway_refresh_refuses_stale_process_ownership(self):
+        self.gateway_fixture()
+        with mock.patch.object(network,"owned_ggsn",return_value=False), \
+             mock.patch.object(network,"run") as run:
+            with self.assertRaisesRegex(ValueError,"owned by this checkout"):
+                network.refresh()
+            run.assert_not_called()
+
+    def test_gateway_status_reports_stale_nat_after_vpn_disconnect(self):
+        self.gateway_fixture()
+        out=io.StringIO()
+        with mock.patch.object(network,"owned_ggsn",return_value=True), \
+             mock.patch.object(network,"default_interface",return_value="en0"), \
+             mock.patch.object(network,"run",return_value="1\n"), \
+             contextlib.redirect_stdout(out):
+            self.assertEqual(network.status(),1)
+        result=json.loads(out.getvalue())
+        self.assertEqual(result["status"],"needs_refresh")
+        self.assertEqual(result["internet_interface"],"utun4")
+        self.assertEqual(result["current_internet_interface"],"en0")
+        self.assertFalse(result["default_route_unchanged"])
+
     def test_invalid_profiles_do_not_render(self):
         original = self.profile.read_text()
         cases = [
