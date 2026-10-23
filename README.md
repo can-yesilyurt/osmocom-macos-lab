@@ -133,18 +133,6 @@ python3 scripts/check_publication.py
 python3 -B scripts/smoke_native.py
 ```
 
-The native smoke check starts the core, verifies its links, checks that a second
-launcher cannot replace it, and parses the real BTS configuration in VTY test
-mode. It never launches the transceiver or enables RF. The manually triggered
-native-build CI workflow runs the same check; handset/RF tests remain local.
-The cloud build uses a functional timer delivery/disarm probe in place of the
-port's two strict timing programs, which failed on the hosted VM. The default
-physical-host build runs both original programs. See [the recorded limitation](docs/VALIDATION.md).
-
-Profiles, subscriber/SMS databases, logs, source downloads and binaries stay in
-ignored local state. Never attach raw HLR/MSC logs or databases to public issues:
-they can contain subscriber identifiers and message content. Publish a redacted
-summary like the [included validation snapshot](validation/2026-10-23/summary.json).
 
 The [MIT license](LICENSE) covers this repository's original orchestration and
 documentation. External sources and their modifications retain their own
