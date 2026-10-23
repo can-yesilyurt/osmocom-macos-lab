@@ -52,13 +52,17 @@ commands, not the number of individual test assertions.
 The skips are not passing tests. In particular, the MSC suite's wrapped
 call/VLR/SMS-queue cases were not exercised by that suite on Darwin.
 
-The first cloud build exposed a separate hosted-runner timing limit: the strict
+The first [cloud build](https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39929138390)
+exposed a separate hosted-runner timing limit: the strict
 raw timerfd program observed initial 100 ms intervals at 175 ms and 166 ms,
 and a 150 ms shot at 223 ms. Its other checks completed, but the program failed.
-The cloud workflow explicitly omits that whole standalone program in both
-prefixes, records the skips and retains the event-loop callback check. The
-physical-host results above include the unmodified strict test. A cloud build
-result therefore does not validate those timer semantics or real-time behavior.
+The next [cloud run](https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39929886888)
+also failed the fixed-window callback-count check in the SCTP-enabled prefix.
+The cloud workflow uses a functional timer delivery/disarm probe in place of
+both timing-sensitive programs in each prefix and records the four omissions.
+The physical-host results above include both original programs. A cloud build
+does not establish the omitted assertions or real-time behavior; its functional
+timer probe has a separate, explicitly documented scope.
 
 ## Automated runtime checks
 

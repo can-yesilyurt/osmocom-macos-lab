@@ -63,16 +63,22 @@ moving to another path. Changing a pin also requires a separate state directory.
 Homebrew libraries are not vendored and may change after `brew upgrade`; rerun
 doctor, the relevant build checks and the native smoke check after such changes.
 
-The optional `--skip-raw-timer-test` switch omits the standalone timerfd program
-in both prefixes and records those omissions in `skipped_checks`. The default
-build runs it. The cloud workflow uses this switch because the hosted VM missed
-the program's strict 80–120 ms interval bounds in an observed run. The omitted
-program also contains coalescing, close/reuse and fork checks, so none of its
-checks count as CI passes. Event-loop timer callbacks and sockaddr checks still
-run, followed by all supported component suites and the native core smoke test.
-The callback test's printed count is checked explicitly because its upstream
-program returns zero even when the count is wrong. Use the default build on the
-physical host to retain the full selected regression set.
+`--timer-checks strict` is the default: it runs the port's original raw timerfd
+and fixed-window callback programs in both prefixes. The callback count is
+checked explicitly because the port's program always returns zero.
+
+`--timer-checks functional` is used by the cloud workflow. It replaces those two
+programs with this repository's `tests/timerfd_functional.c`, which checks real
+event-loop delivery of at least six expirations, valid read counts, callback-side
+disarm, zero remaining interval, cleared pending counts and non-readability after
+disarm. It allows ten seconds for delivery and makes no latency claim. Both
+omitted strict programs are recorded in `skipped_checks` for each prefix. Their
+timing, close/reuse, fork and other assertions do not count as CI passes.
+
+This distinction is based on observed hosted-VM failures of the 80–120 ms raw
+interval bounds and the fixed 2.6-second callback count. Sockaddr checks, the
+supported component suites and the native core smoke test still run. Use the
+default mode on the physical host to retain the full selected regression set.
 
 ## Checks run by the builder
 

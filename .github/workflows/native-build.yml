@@ -22,8 +22,8 @@ jobs:
         run: brew bundle --file=Brewfile
       - name: Host and dependencies
         run: ./lab doctor
-      - name: Build and run component checks (strict raw timer test excluded on VM)
-        run: ./lab build --jobs 3 --skip-raw-timer-test
+      - name: Build and run component checks (functional timer checks on VM)
+        run: ./lab build --jobs 3 --timer-checks functional
       - name: Render example profile with RF locked
         run: |
           cp lab.example.json lab.json

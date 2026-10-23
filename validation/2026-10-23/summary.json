@@ -69,6 +69,14 @@
     "observed_150ms_shot_ms": 223,
     "ci_omits_standalone_raw_timer_program_in_both_prefixes": true,
     "default_physical_host_build_omits_it": false,
-    "event_loop_callback_count_still_required": 6
+    "fixed_window_callback_test_passed_in_cloud": false,
+    "ci_strict_programs_omitted_per_prefix": [
+      "darwin_timerfd_test",
+      "darwin_timerfd_osmo_fd_test"
+    ],
+    "functional_probe_minimum_expirations": 6,
+    "functional_probe_checks_disarm_and_reset": true,
+    "functional_probe_assesses_latency": false,
+    "functional_probe_passed_both_physical_core_prefixes": true
   }
 }

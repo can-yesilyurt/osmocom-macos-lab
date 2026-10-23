@@ -110,7 +110,9 @@ def require_timer_callbacks(text):
         raise RuntimeError("Timerfd event-loop test did not report the expected six callbacks")
 
 
-def build_all(jobs=4, start_from=None, skip_raw_timer_test=False):
+def build_all(jobs=4, start_from=None, timer_checks="strict"):
+    if timer_checks not in ("strict", "functional"):
+        raise ValueError("Timer checks must be strict or functional")
     if platform.system() != "Darwin" or platform.machine() != "arm64":
         raise ValueError("The native build requires Apple Silicon macOS")
     state = state_dir()
@@ -124,12 +126,14 @@ def build_all(jobs=4, start_from=None, skip_raw_timer_test=False):
     logs = state / "logs/build"
     logs.mkdir(parents=True,exist_ok=True)
     report_path = state / "build-report.json"
-    report = {"sources":lock["sources"], "steps":[], "skipped_checks":[], "complete":False}
+    report = {"sources":lock["sources"], "steps":[], "timer_checks_requested":timer_checks,
+              "skipped_checks":[], "complete":False}
     if report_path.exists():
         old = json.loads(report_path.read_text())
         if old["sources"] != report["sources"]:
             raise ValueError("Build provenance has different source pins; use a separate state directory")
         report["steps"] = old["steps"]
+        report["skipped_checks"] = old.get("skipped_checks", [])
     source_root = state / "sources"
     names = [s[0] for s in STAGES]
     if start_from and start_from not in names:
@@ -205,20 +209,31 @@ def build_all(jobs=4, start_from=None, skip_raw_timer_test=False):
             (target / "include/sys").mkdir(exist_ok=True)
             shutil.copyfile(src / "include/sys/timerfd.h",target / "include/sys/timerfd.h")
             port = source_root / "libosmocore-port"
-            for test in ("darwin_timerfd_test","darwin_timerfd_osmo_fd_test","sockaddr_cmp_test"):
-                binary = dest / test
-                flags = shlex.split(subprocess.check_output(["pkg-config","--cflags","--libs","libosmocore"],env=env,text=True))
-                run(label+"-"+test+"-build",["clang","-O2","-I"+str(target / "include"),str(port / "tests" / (test+".c")),"-o",binary,*flags],dest,env)
-                if skip_raw_timer_test and test == "darwin_timerfd_test":
-                    skipped = {"name":label+"-"+test,
-                               "reason":"Standalone raw timerfd test explicitly omitted; VM timing is not validated"}
+            # A resume that doesn't rebuild this prefix must retain its omissions.
+            report["skipped_checks"] = [s for s in report["skipped_checks"]
+                                        if not s["name"].startswith(label+"-")]
+            tests = ["darwin_timerfd_test", "darwin_timerfd_osmo_fd_test", "sockaddr_cmp_test"]
+            if timer_checks == "functional":
+                for omitted in tests[:2]:
+                    skipped = {"name":label+"-"+omitted,
+                               "reason":"Strict timing test replaced by functional timer delivery/disarm check on VM"}
                     report["skipped_checks"].append(skipped)
-                    write_json(report_path, report)
                     print("SKIP " + skipped["name"] + ": " + skipped["reason"], flush=True)
-                else:
-                    run(label+"-"+test,[binary],dest,env,30)
-                    if test == "darwin_timerfd_osmo_fd_test":
+                tests = ["timerfd_functional", "sockaddr_cmp_test"]
+                write_json(report_path, report)
+            for test in tests:
+                binary = dest / test
+                test_source = (ROOT / "tests/timerfd_functional.c" if test == "timerfd_functional"
+                               else port / "tests" / (test+".c"))
+                flags = shlex.split(subprocess.check_output(["pkg-config","--cflags","--libs","libosmocore"],env=env,text=True))
+                run(label+"-"+test+"-build",["clang","-O2","-I"+str(target / "include"),test_source,"-o",binary,*flags],dest,env)
+                run(label+"-"+test,[binary],dest,env,30)
+                if test == "darwin_timerfd_osmo_fd_test":
+                    try:
                         require_timer_callbacks((logs / (label+"-"+test+".log")).read_text())
+                    except RuntimeError:
+                        print((logs / (label+"-"+test+".log")).read_text()[-7000:])
+                        raise
     report["complete"] = True
     write_json(report_path,report)
     print("Native build complete. Reports and private build logs: " + str(state),flush=True)
