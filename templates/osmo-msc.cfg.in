@@ -1,0 +1,44 @@
+log stderr
+ logging color 0
+ logging timestamp 1
+ logging level set-all notice
+line vty
+ bind 127.0.0.1 @MSC_VTY@
+ctrl
+ bind 127.0.0.1 @MSC_CTRL@
+cs7 instance 0
+ point-code 0.23.1
+ asp asp-clnt-msc-0 @M3UA@ 0 m3ua
+  remote-ip 127.0.0.1
+  local-ip 127.0.0.1
+  role asp
+  sctp-role client
+network
+ network country code @MCC@
+ mobile network code @MNC@
+ short name @OPERATOR_NAME@
+ long name @OPERATOR_NAME@
+ authentication optional
+ encryption a5 0
+ mm info 1
+ mgw 0
+  remote-ip 127.0.0.1
+  remote-port @MGW_MSC_MGCP@
+  local-ip 127.0.0.1
+  local-port @MSC_MGCP_CLIENT@
+msc
+ mncc internal
+ assign-tmsi
+mncc-int
+ default-codec tch-f fr
+hlr
+ remote-ip 127.0.0.1
+ remote-port 4222
+ ipa-name MSC-@MCC@-@MNC@-0
+smsc
+ database sms.db
+smpp
+ local-tcp-ip 127.0.0.1 @SMPP@
+ policy closed
+sgs
+ local-ip 127.0.0.1

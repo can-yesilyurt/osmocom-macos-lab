@@ -1,0 +1,12 @@
+log stderr
+ logging color 0
+ logging timestamp 1
+ logging level set-all notice
+line vty
+ bind 127.0.0.1 @STP_VTY@
+cs7 instance 0
+ point-code 0.23.0
+ xua rkm routing-key-allocation dynamic-permitted
+ listen m3ua @M3UA@
+  local-ip 127.0.0.1
+  accept-asp-connections dynamic-permitted

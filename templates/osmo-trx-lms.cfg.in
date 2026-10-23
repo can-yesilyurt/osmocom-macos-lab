@@ -1,0 +1,21 @@
+log stderr
+ logging color 0
+ logging timestamp 1
+ logging level set-all info
+line vty
+ bind 127.0.0.1 @TRX_VTY@
+ctrl
+ bind 127.0.0.1 @TRX_CTRL@
+trx
+ bind-ip 127.0.0.1
+ remote-ip 127.0.0.1
+ base-port @TRX_BASE@
+@DEVICE_ARGS_LINE@
+ clock-ref internal
+ egprs disable
+ tx-sps 4
+ rx-sps 4
+ filler type zero
+ chan 0
+  tx-path @TX_PATH@
+  rx-path @RX_PATH@

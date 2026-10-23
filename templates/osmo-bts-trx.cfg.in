@@ -1,0 +1,23 @@
+log stderr
+ logging color 0
+ logging timestamp 1
+ logging level set-all info
+line vty
+ bind 127.0.0.1 @BTS_VTY@
+ctrl
+ bind 127.0.0.1 @BTS_CTRL@
+phy 0
+ osmotrx ip local 127.0.0.1
+ osmotrx ip remote 127.0.0.1
+ osmotrx base-port local @BTS_BASE@
+ osmotrx base-port remote @TRX_BASE@
+ instance 0
+  osmotrx rx-gain @RX_GAIN@
+  osmotrx tx-attenuation oml
+bts 0
+ band 900
+ ipa unit-id 9000 0
+ oml remote-ip 127.0.0.1
+ pcu-socket @PCU_SOCKET@
+ trx 0
+  phy 0 instance 0

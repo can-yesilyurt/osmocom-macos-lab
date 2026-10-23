@@ -1,0 +1,32 @@
+name: Native ARM64 build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      OSMO_LAB_STATE: ${{ runner.temp }}/osmolab
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Homebrew dependencies
+        run: brew bundle --file=Brewfile
+      - name: Host and dependencies
+        run: ./lab doctor
+      - name: Build pinned sources and run component checks
+        run: ./lab build --jobs 3
+      - name: Render example profile with RF locked
+        run: |
+          cp lab.example.json lab.json
+          ./lab configure
+      - name: Native core and BTS configuration smoke check (no SDR)
+        run: python3 -B scripts/smoke_native.py

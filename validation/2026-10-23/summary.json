@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "report_date": "2026-10-23",
+  "host": {
+    "cpu": "Apple M5 Max",
+    "architecture": "arm64",
+    "macos": "27.0.1",
+    "apple_clang": "21.0.0",
+    "macos_sdk": "27.0"
+  },
+  "dependencies": {
+    "talloc": "2.5.0",
+    "gnutls": "3.8.13",
+    "fftw3f": "3.3.11",
+    "LimeSuite": "23.11.0-release",
+    "usrsctp": "0.9.5.0",
+    "sqlite3": "3.53.4"
+  },
+  "fresh_portable_build": {
+    "source_manifest": "sources.lock.json",
+    "source_checkouts": 13,
+    "complete": true,
+    "recorded_commands": 123,
+    "failed_commands": 0,
+    "orchestration_tests_passed": 11,
+    "native_smoke_passed": true,
+    "core_links": ["MSC/STP M3UA active", "MSC/HLR GSUP connected", "BSC/MSC BSSMAP connected"],
+    "duplicate_launcher_preserved_core": true,
+    "bts_vty_configuration_test_passed": true,
+    "sdr_opened_during_smoke": false,
+    "rf_enabled_during_smoke": false,
+    "handset_acceptance_repeated_on_portable_build": false
+  },
+  "native_handset_session": {
+    "build": "Original staged native build using the same pinned component revisions",
+    "radio": "LimeSDR-USB",
+    "handsets": "Two iPhones",
+    "band": "GSM900",
+    "arfcn": 25,
+    "mcc": "520",
+    "mnc": "999",
+    "network_name": "OSMO-TEST",
+    "registered_handsets_daemon_verified": 2,
+    "calls_operator_confirmed": true,
+    "sms_operator_confirmed": true,
+    "independent_audio_or_sms_capture_published": false,
+    "broadcast_decode_source": "Local BTS-to-TRX stream, not independent OTA reception",
+    "long_duration_soak_tested": false,
+    "calibrated_rf_measurements": false
+  },
+  "privacy": {
+    "raw_runtime_logs_published": false,
+    "subscriber_identifiers_published": false,
+    "subscriber_databases_published": false,
+    "hardware_serial_published": false
+  },
+  "ci_results_inferred_from_local_checks": false
+}

@@ -1,0 +1,31 @@
+This repository's original orchestration and documentation are Copyright
+2026 Can Yesilyurt and are provided under LICENSE (MIT).
+
+The build downloads external projects; they are not relicensed by this
+repository. This repository contains no redistributed component binaries or
+complete upstream source trees. Consult each pinned project's COPYING,
+debian/copyright and individual file headers for authoritative terms.
+
+Osmocom and its contributors developed libosmocore, libosmo-netif,
+libosmo-abis, libosmo-sigtran, OsmoTRX, OsmoBTS, OsmoBSC, OsmoMGW,
+OsmoHLR and OsmoMSC. libsmpp34 has its own upstream contributors.
+https://osmocom.org/
+
+Andrei Gosman developed the macOS ARM64 ports and SCTP compatibility layer
+used by this recipe. Full source URLs and commits are in sources.lock.json.
+https://github.com/AndreiGosman
+
+Principal external license families include:
+  libosmocore and its Darwin patches: GPL-2.0-or-later.
+  libosmo-netif and libosmo-sigtran/OsmoSTP: GPL-2.0-or-later.
+  OsmoTRX, OsmoBTS, OsmoBSC, OsmoMGW, OsmoHLR, OsmoMSC and much of
+    libosmo-abis: AGPL-3.0-or-later, with per-file exceptions.
+  libsctp-compat and libsmpp34: LGPL-2.1-or-later.
+  usrsctp: BSD-3-Clause.
+Other dependencies installed through Homebrew have their own licenses.
+
+Changes made to external source files during the build retain those
+files' licenses. The MIT grant for this repository does not override
+GPL, AGPL, LGPL or other obligations for external code or combined works.
+If distributing a built stack, review and satisfy those projects' source,
+notice and other applicable distribution requirements.

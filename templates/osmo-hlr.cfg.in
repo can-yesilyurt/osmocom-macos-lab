@@ -1,0 +1,12 @@
+log stderr
+ logging color 0
+ logging timestamp 1
+ logging level set-all notice
+line vty
+ bind 127.0.0.1 @HLR_VTY@
+ctrl
+ bind 127.0.0.1 @HLR_CTRL@
+hlr
+ @SUBSCRIBER_POLICY@
+ gsup
+  bind ip 127.0.0.1

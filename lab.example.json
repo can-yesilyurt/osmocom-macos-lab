@@ -1,0 +1,18 @@
+{
+  "operator_name": "OSMO-TEST",
+  "mcc": "001",
+  "mnc": "01",
+  "band": "GSM900",
+  "arfcn": 25,
+  "lac": 1,
+  "cell_id": 1,
+  "bsic": 63,
+  "device_args": "",
+  "tx_path": "BAND1",
+  "rx_path": "LNAL",
+  "rx_gain": 30,
+  "max_power_reduction_db": 20,
+  "auto_create_subscribers": true,
+  "msisdn_digits": 5,
+  "ports": {}
+}

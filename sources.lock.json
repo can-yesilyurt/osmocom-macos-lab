@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "sources": {
+    "libosmocore": {
+      "url": "https://github.com/osmocom/libosmocore.git",
+      "commit": "2a26b47cb6c6590fde8cb953f1caeaf498d5568b",
+      "version": "1.14.2.4"
+    },
+    "libosmocore-port": {
+      "url": "https://github.com/AndreiGosman/libosmocore-macos-arm64.git",
+      "commit": "2e50312c3f7a49135b5dec33d03187a09dd224b0",
+      "version": "0.2.8"
+    },
+    "osmo-trx": {
+      "url": "https://github.com/AndreiGosman/osmo-trx-macos-arm64.git",
+      "commit": "2142e7a301f44db956746d47cb3f22c77667d410",
+      "version": "1.8.0"
+    },
+    "libosmo-netif": {
+      "url": "https://github.com/AndreiGosman/libosmo-netif-macos-arm64.git",
+      "commit": "c8bb993434cde5271e8844108dc0d2dcad1139ee",
+      "version": "1.8.0"
+    },
+    "libosmo-abis": {
+      "url": "https://github.com/AndreiGosman/libosmo-abis-macos-arm64.git",
+      "commit": "60a9eb67f1d9257c75392fcaf733b5e5699ce465",
+      "version": "2.2.0"
+    },
+    "osmo-bts": {
+      "url": "https://github.com/AndreiGosman/osmo-bts-macos-arm64.git",
+      "commit": "bbcf5102754fffacbf550d054df87a61b282514c",
+      "version": "1.12.0"
+    },
+    "libsctp-compat": {
+      "url": "https://github.com/AndreiGosman/libsctp-compat-macos-arm64.git",
+      "commit": "3a25a3813cdc6a569b27cb0bbc7e63c854bbaa2d",
+      "version": "0.4.1"
+    },
+    "libosmo-sigtran": {
+      "url": "https://github.com/AndreiGosman/libosmo-sigtran-macos-arm64.git",
+      "commit": "b2038fb8ce513729d48691eae957fbee10158c36",
+      "version": "2.3.0"
+    },
+    "osmo-mgw": {
+      "url": "https://github.com/AndreiGosman/osmo-mgw-macos-arm64.git",
+      "commit": "6ba1ca4b93c3b41c88b3267f3ab057d7a0a92115",
+      "version": "1.16.1"
+    },
+    "osmo-bsc": {
+      "url": "https://github.com/AndreiGosman/osmo-bsc-macos-arm64.git",
+      "commit": "1bfb14109cdbb0c0254b1d45994cec3fbec1b48b",
+      "version": "1.15.0"
+    },
+    "libsmpp34": {
+      "url": "https://github.com/AndreiGosman/libsmpp34-macos-arm64.git",
+      "commit": "004e7ab626652d21373c21d4fe2aaa251d032de7",
+      "version": "1.14.6"
+    },
+    "osmo-hlr": {
+      "url": "https://github.com/AndreiGosman/osmo-hlr-macos-arm64.git",
+      "commit": "b7b745e661ae388c8a7429b8fbf6b6ae5df7eb79",
+      "version": "1.9.4"
+    },
+    "osmo-msc": {
+      "url": "https://github.com/AndreiGosman/osmo-msc-macos-arm64.git",
+      "commit": "6b44a1ec306115fb08d6de4b6f9ea4e8f22176df",
+      "version": "1.16.0"
+    }
+  }
+}
