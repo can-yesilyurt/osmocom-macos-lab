@@ -14,5 +14,11 @@
   "max_power_reduction_db": 20,
   "auto_create_subscribers": true,
   "msisdn_digits": 5,
+  "gprs_enabled": false,
+  "apn": "osmo",
+  "accept_any_apn": false,
+  "data_network": "10.45.0.0/24",
+  "dns_servers": ["1.1.1.1", "8.8.8.8"],
+  "data_mtu": 1500,
   "ports": {}
 }

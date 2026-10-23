@@ -132,6 +132,16 @@ def run_core(check=False):
     children, streams = [], []
     logdir = None
     code = 0
+    services = list(SERVICES)
+    if p["gprs_enabled"]:
+        from network import owned_ggsn
+        gateway = state / "run/network.json"
+        if not gateway.is_file():
+            raise ValueError("GPRS requires its gateway first: sudo ./lab network start")
+        gateway_record = json.loads(gateway.read_text())
+        if gateway_record.get("status")!="ready" or not owned_ggsn(gateway_record):
+            raise ValueError("GPRS gateway is not ready; inspect ./lab network status")
+        services.append(("sgsn","packet","osmo-sgsn","osmo-sgsn","sgsn_vty"))
     os.umask(0o077)
 
     def request_stop(signum,frame):
@@ -158,7 +168,10 @@ def run_core(check=False):
             try: fcntl.flock(lock,fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:
                 raise ValueError("This core is already running; use ./lab status instead of core --check")
-            for port in [ports[k] for k in ports if k.endswith(("_vty","_ctrl")) and k not in ("bts_vty","bts_ctrl","trx_vty","trx_ctrl")]+[4222,3002,3003,ports["smpp"]]:
+            external = ("bts_vty","bts_ctrl","trx_vty","trx_ctrl","pcu_vty","ggsn_vty","ggsn_ctrl")
+            if not p["gprs_enabled"]:
+                external += ("sgsn_vty","sgsn_ctrl")
+            for port in [ports[k] for k in ports if k.endswith(("_vty","_ctrl")) and k not in external]+[4222,3002,3003,ports["smpp"]]:
                 if ready(port): raise ValueError(f"TCP port {port} is already occupied; no existing process was replaced")
             for key in ("stp_encap","bsc_encap","msc_encap","mgw_bsc_mgcp","mgw_msc_mgcp","bsc_mgcp_client","msc_mgcp_client"):
                 with socket.socket(socket.AF_INET,socket.SOCK_DGRAM) as probe:
@@ -169,7 +182,7 @@ def run_core(check=False):
             stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
             logdir = state / "logs/runtime" / stamp
             logdir.mkdir(parents=True)
-            for name,group,binary,config,vty in SERVICES:
+            for name,group,binary,config,vty in services:
                 args = command(group,binary,config)
                 if name == "hlr": args += ["-l",str(state / "data/hlr.db")]
                 f = (logdir / (name+".log")).open("wb")
@@ -182,6 +195,9 @@ def run_core(check=False):
             wait_for(lambda:"ASP_ACTIVE" in query(ports["msc_vty"],["show cs7 instance 0 asp"]),20,"MSC M3UA")
             wait_for(lambda:f"MSC-{p['mcc']}-{p['mnc']}-0" in query(ports["hlr_vty"],["show gsup-connections"]),10,"MSC/HLR GSUP")
             wait_for(lambda:"BSSMAP state: CONNECTED" in query(ports["bsc_vty"],["show msc"]),20,"BSC/MSC BSSMAP")
+            if p["gprs_enabled"]:
+                wait_for(lambda:f"SGSN-{p['mcc']}-{p['mnc']}-101" in query(ports["hlr_vty"],["show gsup-connections"]),10,"SGSN/HLR GSUP")
+                print("SGSN/HLR connected. Start ./lab pcu after the BTS.",flush=True)
             print("Core links ready. RF starts locked. Run ./lab trx and ./lab bts in separate terminals.",flush=True)
             print("Explicit RF enable: ./lab rf on\nLogs: "+str(logdir),flush=True)
             if not check:
@@ -210,7 +226,9 @@ def run_core(check=False):
 def run_radio(component):
     p = require_config()
     ports = p["ports"]
-    if component not in ("trx","bts"): raise ValueError("Unknown radio component")
+    if component not in ("trx","bts","pcu"): raise ValueError("Unknown radio component")
+    if component=="pcu" and not p["gprs_enabled"]:
+        raise ValueError("GPRS is not enabled in this profile")
     if ready(ports[component+"_vty"]):
         raise ValueError("That radio management port is already occupied; no existing process was replaced")
     if component == "bts":
@@ -223,9 +241,27 @@ def run_radio(component):
             import errno
             if result != errno.ECONNREFUSED: raise ValueError("Cannot establish whether the PCU socket is stale")
             sockpath.unlink()
-    args = command(component,"osmo-trx-lms" if component == "trx" else "osmo-bts-trx",
-                   "osmo-trx-lms" if component == "trx" else "osmo-bts-trx","-C" if component == "trx" else "-c")
+    binary = {"trx":"osmo-trx-lms","bts":"osmo-bts-trx","pcu":"osmo-pcu"}[component]
+    args = command("packet" if component=="pcu" else component,binary,binary,"-C" if component=="trx" else "-c")
     if component == "bts": args.insert(1,"-s")
     os.umask(0o077)
     os.chdir(state_dir() / "data")
     os.execve(args[0],args,environment(p,component))
+
+
+def packet_status():
+    p = require_config()
+    require_owner()
+    if not p["gprs_enabled"]:
+        raise ValueError("GPRS is disabled")
+    from network import status
+    status()
+    for component, commands in [("sgsn",["show sgsn","show ns entities","show bssgp","show pdp-context all"]),
+                                ("ggsn",["show ggsn lab","show pdp-context ggsn lab"]),
+                                ("pcu",["show ns entities","show bts pdch","show bts statistics"])]:
+        print("\n"+component.upper()+":")
+        if ready(p["ports"][component+"_vty"]):
+            print(query(p["ports"][component+"_vty"],commands))
+        else:
+            print("Not running")
+    return 0

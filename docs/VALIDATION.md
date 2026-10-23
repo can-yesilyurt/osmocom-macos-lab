@@ -6,10 +6,11 @@ The portable recipe in this repository subsequently rebuilt the same pinned
 component versions in a fresh directory. Its automated runtime test covers
 core links and BTS configuration parsing without opening the radio.
 
-These are separate observations: the handset session used the original staged
-native build; the fresh portable build has passed software/core checks but has
-not had a second over-the-air handset acceptance run. No CI result is inferred
-from the local build. The machine-readable snapshot is
+These are separate observations: the successful call/SMS session used the
+original staged native build. The portable packet profile subsequently reached
+confirmed circuit-switched registration for both phones, but call/SMS regression
+and handset packet-data acceptance on that profile remain pending. No CI result
+is inferred from the local build. The machine-readable voice snapshot is
 [`summary.json`](../validation/2026-10-23/summary.json).
 
 ## Host and dependencies
@@ -136,3 +137,83 @@ interconnect, emergency services or long-term call/SMS reliability. A useful nex
 hardware acceptance run would repeat registration, calls and SMS using the
 portable build and record duration, counters and any USB warnings without
 publishing subscriber data.
+
+## Optional packet-data bring-up
+
+The optional GPRS stages were subsequently built on the same physical host,
+using three additional source pins without changing the original thirteen.
+The combined build report contains **141 commands with exit code 0**, including
+18 commands for GGSN, PCU and SGSN. Selected component results were GGSN 6 passed;
+PCU 11 passed / 3 skipped; SGSN 5 passed / 2 skipped. The skips require GNU linker
+wrapping, and external Python/TTCN integration suites were not run.
+Repository orchestration checks passed 19 tests after the packet extension.
+Four additional checks for VPN-route refresh, scoped state removal, rollback
+and stale ownership brought the local suite to 23 passing tests.
+
+The clean ARM64 [native GPRS CI run](https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39952921147)
+also passed at commit `3aa0a20f0e906410b4afe7ce24dc1b86df759e9f`.
+It built the optional components, ran selected component checks, smoke-tested
+the base voice core/BTS configuration and compiled the gateway protocol probe.
+That hosted-VM run used the documented functional timer checks; it did not
+open an SDR, configure NAT or test a handset. The subsequent route-refresh
+change passed the [offline CI checks on macOS and Linux](https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39955445149)
+at `129c7a8`; the later MTU default change passed the same 23 local tests.
+
+All three packet daemons parsed their rendered configurations. The seven-child
+core connected both MSC and SGSN to HLR. With the LimeSDR open and RF locked,
+PCU connected to BTS; both NS peers reported ALIVE / UNBLOCKED, and SGSN's BSSGP
+cell BVC reported UNBLOCKED. The temporary Mac gateway created its `utun`
+interface, enabled forwarding and installed NAT in its own PF anchor while
+preserving the default route.
+
+The carrier subsequently reached Enabled / Unlocked / OK with the PHY connected,
+and PCU reported PDCH enabled on timeslots 6 and 7. Both test phones appeared in
+MSC's subscriber cache with radio contact confirmed, HLR data confirmed and an
+attached use. This verifies circuit-switched registration on the portable
+profile; calls/SMS have not yet been repeated on this profile.
+
+Initially, SGSN received handset routing-area updates without matching mobility
+contexts and sent cause 10 (implicitly detached) rejections. After the phone
+retry, both handsets reached GMM Registered.NORMAL and one had an active IPv4
+PDP context with user-data counters advancing in both directions. Its requested
+APN was `internet`, mapped by the configured fallback to the lab's `osmo` APN.
+The operator reported a G indicator but no page load. This verifies real-handset
+packet registration and PDP activation, while internet page acceptance remains
+incomplete. Subscriber identifiers and raw signaling remain private.
+
+Disabling the host VPN changed the default interface from a VPN tunnel to
+Wi-Fi while the running NAT still referenced the previous interface. Gateway
+status detected the mismatch. The new `network refresh` command retargets only
+the lab NAT and clears connection states originating in the lab pool without
+restarting GGSN or phone PDP contexts. Its live application succeeded: the
+gateway matched the new Wi-Fi route, GGSN retained its PID and one phone retained
+its IPv4 PDP context. The operator still reported no page load after this step.
+
+The subsequent packet-header comparison localized a second problem. The phone
+advertised TCP MSS 1410 on Wi-Fi while GGSN's tunnel MTU was 1280. External TCP
+handshakes succeeded, but 1450-byte DF replies arriving on Wi-Fi did not appear
+on the phone tunnel. A smaller final segment did reach it; the phone's selective
+acknowledgement still reported the missing earlier sequence range. The tunnel's
+PF MSS rule reduced the server's SYN/ACK MSS toward the phone, but did not
+reduce the phone's SYN MSS observed on Wi-Fi. Capture counters reported no
+kernel drops. A small Mac-to-phone ping also completed in about 0.94 seconds.
+
+Applying MTU 1500 to the running GGSN APN and tunnel, matching the current Wi-Fi
+uplink, required no service restart. The previously stalled TCP connection
+then exchanged acknowledged data, and handset downlink counters advanced by
+over 200 KB. The private profile and public example now save MTU 1500. A fresh
+phone page result after this correction remains pending; these observations
+do not establish sustained throughput or general VPN compatibility.
+
+A synthetic native `libgtp` probe subsequently obtained a PDP address, received
+a DNS A response, completed a TCP handshake and received an HTTP 403 response
+from the chosen HTTP destination. This establishes a DNS and TCP/HTTP return
+path through the gateway; the 403 is not a successful page status. It does not
+exercise the real SGSN, PCU, radio, handset, TLS or a sustained transfer.
+
+The upstream SGSN-emulator ICMP probe received no replies. The original Mac
+firewall block-all and stealth settings were in place during the successful
+DNS/TCP/HTTP exchange. Two brief block-all comparisons restored the prior
+setting and did not resolve the initial ICMP/TCP probe failures. No permanent
+firewall-mode change was needed. See [GPRS operation](GPRS.md) for the separate
+gateway and handset acceptance steps.

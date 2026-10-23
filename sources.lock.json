@@ -65,6 +65,21 @@
       "url": "https://github.com/AndreiGosman/osmo-msc-macos-arm64.git",
       "commit": "6b44a1ec306115fb08d6de4b6f9ea4e8f22176df",
       "version": "1.16.0"
+    },
+    "osmo-ggsn": {
+      "url": "https://github.com/AndreiGosman/osmo-ggsn-macos-arm64.git",
+      "commit": "8a5ae376d08a4bfaf07c0be75e550ea22df9b792",
+      "version": "1.15.0"
+    },
+    "osmo-pcu": {
+      "url": "https://github.com/AndreiGosman/osmo-pcu-macos-arm64.git",
+      "commit": "1ca6b64091e2f4146c9e3576d69165a437b9073a",
+      "version": "1.5.3"
+    },
+    "osmo-sgsn": {
+      "url": "https://github.com/AndreiGosman/osmo-sgsn-macos-arm64.git",
+      "commit": "3ee9dc84a3bca5535d196b0c718b6842d1397d0a",
+      "version": "1.13.2"
     }
   }
 }

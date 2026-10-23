@@ -12,7 +12,8 @@ mobile station. The pinned
 [MSC report](https://github.com/AndreiGosman/osmo-msc-macos-arm64/blob/6b44a1ec306115fb08d6de4b6f9ea4e8f22176df/README.md#not-covered)
 also distinguishes startup/link checks from end-to-end voice and location
 updates. This project extends that foundation with a LimeSDR-USB integration,
-a repeatable four-prefix build and a documented two-iPhone lab session.
+a repeatable build and a documented two-iPhone lab session. The base recipe
+uses four prefixes; the optional packet-data components add a fifth.
 It makes no claim of historical priority.
 
 ## Platform choices
@@ -28,8 +29,9 @@ It makes no claim of historical priority.
   BSC/core-side libraries link to the compatibility layer. MSC and HLR use the
   BSC dependency prefix; the radio path does not inherit its interposition.
 - **BTS PCU socket:** the pinned BTS port falls back to `SOCK_STREAM` on Darwin
-  and restores fixed-length PCUIF message framing. This lab disables GPRS and
-  does not start a PCU.
+  and restores fixed-length PCUIF message framing. The default profile keeps
+  GPRS disabled; the optional packet profile starts the native PCU against
+  this socket. Packet data has a separate validation scope.
 - **LimeSDR output control:** the BTS uses `osmotrx tx-attenuation oml`, allowing
   BSC's configured power reduction to reach the TRX. A previous fixed BTS
   attenuation setting contributed to a carrier that the test phones did not

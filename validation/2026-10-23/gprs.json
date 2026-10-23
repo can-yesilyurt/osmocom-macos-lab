@@ -1,0 +1,130 @@
+{
+  "date": "2026-10-23",
+  "status": "experimental_handset_pdp_active_internet_page_acceptance_pending",
+  "build": {
+    "commands_total": 141,
+    "packet_commands_added": 18,
+    "all_exit_zero": true,
+    "source_pins_total": 16,
+    "existing_source_pins_changed": false
+  },
+  "regressions": {
+    "ggsn": {
+      "passed": 6,
+      "skipped": 0
+    },
+    "pcu": {
+      "passed": 11,
+      "skipped": 3
+    },
+    "sgsn": {
+      "passed": 5,
+      "skipped": 2
+    },
+    "orchestration": {
+      "passed": 23
+    }
+  },
+  "native_gprs_ci": {
+    "commit": "3aa0a20f0e906410b4afe7ce24dc1b86df759e9f",
+    "status": "passed",
+    "url": "https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39952921147",
+    "timer_checks": "functional",
+    "radio_tested": false,
+    "nat_tested": false,
+    "handset_tested": false,
+    "covers_subsequent_route_refresh_change": false
+  },
+  "route_refresh_offline_ci": {
+    "commit": "129c7a8d2382d2cff5b90d656b171da745ad3eb1",
+    "status": "passed_macos_and_linux",
+    "url": "https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39955445149"
+  },
+  "control_plane": {
+    "msc_hlr": "connected",
+    "bsc_msc_bssmap": "connected",
+    "sgsn_hlr": "connected",
+    "pcu_bts": "connected",
+    "ns": "alive_unblocked",
+    "cell_bvc": "unblocked"
+  },
+  "gateway": {
+    "native_utun_created": true,
+    "ipv4_forwarding_enabled": true,
+    "nat_scoped_to_data_pool": true,
+    "default_route_preserved": true,
+    "original_firewall_mode_restored": true
+  },
+  "route_change": {
+    "trigger": "operator_disabled_vpn",
+    "stale_nat_detected": true,
+    "current_default_is_wifi": true,
+    "refresh_unit_checks": "passed",
+    "live_refresh": "passed",
+    "ggsn_restarted": false,
+    "active_pdp_context_preserved": true,
+    "default_interface_matches_nat": true
+  },
+  "mtu_correction": {
+    "previous_tunnel_mtu": 1280,
+    "current_tunnel_mtu": 1500,
+    "current_uplink_mtu": 1500,
+    "phone_advertised_tcp_mss_on_wifi": 1410,
+    "missing_reply_ip_length": 1450,
+    "missing_reply_df_set": true,
+    "reply_seen_on_wifi_but_not_phone_tunnel": true,
+    "phone_sack_confirmed_missing_sequence_range": true,
+    "capture_kernel_drops": 0,
+    "mac_to_phone_small_ping_rtt_ms": 935.646,
+    "live_apn_and_tunnel_mtu_applied": true,
+    "ggsn_restarted": false,
+    "private_profile_and_public_example_updated": true,
+    "acknowledged_tcp_progress_after_correction": true,
+    "phone_page_acceptance_after_correction": "pending"
+  },
+  "synthetic_probe": {
+    "real_subscribers_used": false,
+    "pdp_context_accepted": true,
+    "dns_a_response_received": true,
+    "tcp_handshake_completed": true,
+    "http_response_received": true,
+    "http_status": 403,
+    "successful_page_status": false,
+    "icmp_replies": 0,
+    "radio_tested": false,
+    "handset_tested": false,
+    "tls_tested": false,
+    "throughput_tested": false
+  },
+  "radio": {
+    "carrier_state": "enabled_unlocked_ok",
+    "phy_connected": true,
+    "pdch_timeslots": [
+      6,
+      7
+    ],
+    "independent_rf_measurement": false
+  },
+  "handset": {
+    "cs_registration": "two_subscribers_confirmed_by_radio_and_hlr",
+    "calls_sms_regression_on_packet_profile": "not_yet_run",
+    "packet_signaling": "routing_area_updates_received",
+    "routing_area_update_reject_cause": 10,
+    "gmm_attach_request_observed": true,
+    "mm_contexts": 2,
+    "pdp_contexts": 1,
+    "apn_menu": "unavailable_on_test_iphone",
+    "wildcard_apn_mapping_enabled_for_test": true,
+    "packet_registration": "passed_two_handsets",
+    "pdp_activation": "passed_one_handset",
+    "requested_apn": "internet",
+    "ggsn_apn_in_use": "osmo",
+    "user_data_counters_both_directions": true,
+    "g_indicator": "operator_reported",
+    "internet_request": "page_did_not_load_after_route_refresh_before_mtu_correction"
+  },
+  "cleanup": {
+    "unit_scope_check": "passed",
+    "live_stop_restore_cycle": "not_yet_run"
+  }
+}

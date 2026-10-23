@@ -35,7 +35,7 @@ network
   ipa unit-id 9000 0
   oml ipa stream-id 255 line 0
   codec-support fr
-  gprs mode none
+@GPRS_CONFIG@
   trx 0
    rf_locked 1
    arfcn @ARFCN@
@@ -55,9 +55,9 @@ network
    timeslot 5
     phys_chan_config TCH/F
    timeslot 6
-    phys_chan_config TCH/F
+    phys_chan_config @PDCH_6@
    timeslot 7
-    phys_chan_config TCH/F
+    phys_chan_config @PDCH_7@
 msc 0
  allow-emergency deny
  codec-list fr1
