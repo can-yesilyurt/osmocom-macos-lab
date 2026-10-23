@@ -12,9 +12,11 @@ Line Tools and Python 3. The orchestration uses Python's standard library only.
 Install the build/runtime dependencies with `brew bundle --file=Brewfile`, then
 run `./lab doctor`. There is no `sudo` step in the build or launchers.
 
-The validated machine used macOS 27.0.1 and Apple clang 21.0.0. The manual native
-CI job targets GitHub's ARM64 `macos-26` runner. Defining that job does not establish
-a passing CI result; consult its actual run before claiming that host works.
+The physical test machine used macOS 27.0.1 and Apple clang 21.0.0. The manual
+native CI job targets GitHub's ARM64 `macos-26` runner. A clean build and core
+smoke check passed on macOS 26.6.2 in functional timer mode; see the actual
+[run](https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39931415240)
+and the separate [validation scopes](VALIDATION.md).
 
 Paths must have no whitespace. Configuration additionally checks that the PCU
 socket path fits in Darwin's 103 usable Unix socket path bytes. A short absolute

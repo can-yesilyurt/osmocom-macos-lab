@@ -78,5 +78,37 @@
     "functional_probe_checks_disarm_and_reset": true,
     "functional_probe_assesses_latency": false,
     "functional_probe_passed_both_physical_core_prefixes": true
+  },
+  "hosted_arm64_ci": {
+    "url": "https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39931415240",
+    "repository_commit": "e5b6ab1aaa95d3ab01b72bbd1aef18e4f67ed755",
+    "conclusion": "success",
+    "macos": "26.6.2",
+    "architecture": "arm64",
+    "recorded_commands": 119,
+    "failed_commands": 0,
+    "timer_checks": "functional",
+    "functional_probe_passed_both_core_prefixes": true,
+    "strict_program_omissions": [
+      "core-radio-darwin_timerfd_test",
+      "core-radio-darwin_timerfd_osmo_fd_test",
+      "core-cn-darwin_timerfd_test",
+      "core-cn-darwin_timerfd_osmo_fd_test"
+    ],
+    "native_smoke_passed": true,
+    "sqlite3": "3.54.0",
+    "other_dependencies": "Same versions as physical-host dependencies above",
+    "sdr_opened": false,
+    "rf_enabled": false
+  },
+  "offline_ci": {
+    "url": "https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39931386177",
+    "conclusion": "success",
+    "runners": [
+      "ubuntu-24.04",
+      "macos-26"
+    ],
+    "orchestration_tests_passed_per_runner": 12,
+    "publication_check_passed": true
   }
 }

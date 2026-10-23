@@ -1,5 +1,8 @@
 # Native GSM lab on Apple Silicon macOS
 
+[![Offline checks](https://github.com/can-yesilyurt/osmocom-macos-lab/actions/workflows/checks.yml/badge.svg)](https://github.com/can-yesilyurt/osmocom-macos-lab/actions/workflows/checks.yml)
+[![Native ARM64 build](https://github.com/can-yesilyurt/osmocom-macos-lab/actions/workflows/native-build.yml/badge.svg)](https://github.com/can-yesilyurt/osmocom-macos-lab/actions/workflows/native-build.yml)
+
 Build and run a local Osmocom 2G network on macOS with a **LimeSDR-USB**, using
 OsmoTRX-LMS, OsmoBTS, OsmoBSC, OsmoSTP, OsmoMSC, OsmoHLR and two OsmoMGWs.
 The daemons run as native ARM64 processes without a VM, container or root access.
@@ -25,8 +28,11 @@ his existing BTS hardware validation. See [credits and porting notes](docs/PORTI
 | Handsets | Two iPhones; registration checked in daemons, calls/SMS operator confirmed |
 | Core transport | SCTP compatibility layer over loopback UDP; separate encapsulation ports per process |
 
-Other Macs, macOS releases, radios and bands need their own validation. This
-recipe currently accepts GSM900 ARFCNs 1–124. GPRS/EDGE, 3G/LTE/5G, roaming and
+An independent clean build and core-only smoke check also
+[passed on a hosted ARM64 Mac running macOS 26.6.2](https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39931415240),
+using the functional CI timer mode and no SDR. Radio operation on other Macs,
+macOS releases, radios and bands needs its own validation. This recipe currently
+accepts GSM900 ARFCNs 1–124. GPRS/EDGE, 3G/LTE/5G, roaming and
 external telephone interconnect are outside the tested profile.
 
 ## Build

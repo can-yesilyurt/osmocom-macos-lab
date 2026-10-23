@@ -52,6 +52,24 @@ commands, not the number of individual test assertions.
 The skips are not passing tests. In particular, the MSC suite's wrapped
 call/VLR/SMS-queue cases were not exercised by that suite on Darwin.
 
+## Hosted ARM64 software check
+
+The [native build run](https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39931415240)
+passed on a clean GitHub-hosted ARM64 Mac running macOS **26.6.2**, at repository
+commit `e5b6ab1aaa95d3ab01b72bbd1aef18e4f67ed755`. It recorded **119 successful
+build/check commands**, then passed the same core and BTS-configuration smoke
+check listed below. No SDR was opened and RF was not enabled. The dependency
+versions matched the physical-host table except for SQLite, which was 3.54.0.
+The [offline checks](https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39931386177)
+also passed all 12 orchestration tests and publication checks on Linux and macOS.
+
+The cloud build used `--timer-checks functional`: the original raw timerfd and
+fixed-window callback programs were replaced by the functional delivery/disarm
+probe in each core prefix. Those **four program omissions** are explicit in the
+build report. The probe passed in both prefixes and checks event delivery and
+disarming without claiming scheduling latency. The physical-host build's 123
+commands above used the original strict programs instead.
+
 The first [cloud build](https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39929138390)
 exposed a separate hosted-runner timing limit: the strict
 raw timerfd program observed initial 100 ms intervals at 175 ms and 166 ms,
