@@ -131,6 +131,9 @@ The native smoke check starts the core, verifies its links, checks that a second
 launcher cannot replace it, and parses the real BTS configuration in VTY test
 mode. It never launches the transceiver or enables RF. The manually triggered
 native-build CI workflow runs the same check; handset/RF tests remain local.
+The cloud build explicitly skips the strict standalone timerfd program because
+its timing bounds failed on the hosted VM; the default physical-host build runs
+it. See [the recorded limitation](docs/VALIDATION.md).
 
 Profiles, subscriber/SMS databases, logs, source downloads and binaries stay in
 ignored local state. Never attach raw HLR/MSC logs or databases to public issues:

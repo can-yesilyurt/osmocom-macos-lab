@@ -37,6 +37,8 @@ def main():
     build = sub.add_parser("build",help="fetch pinned sources, build and run component regression checks")
     build.add_argument("--jobs",type=int,default=4)
     build.add_argument("--from",dest="start_from")
+    build.add_argument("--skip-raw-timer-test", action="store_true",
+                       help="explicitly omit the standalone timerfd test on a jittery VM; recorded as skipped")
     sub.add_parser("configure",help="render local configurations with RF locked")
     core = sub.add_parser("core",help="run STP, two MGWs, HLR, MSC and BSC in the foreground")
     core.add_argument("--check",action="store_true",help="start a temporary core, check links, then stop")
@@ -52,7 +54,7 @@ def main():
         elif args.command == "build":
             if not 1 <= args.jobs <= 64: raise ValueError("--jobs must be in 1..64")
             from build import build_all
-            build_all(args.jobs,args.start_from)
+            build_all(args.jobs,args.start_from,args.skip_raw_timer_test)
         elif args.command == "configure":
             from configure import render
             render()

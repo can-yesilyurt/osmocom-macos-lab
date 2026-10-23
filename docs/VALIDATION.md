@@ -47,10 +47,18 @@ commands, not the number of individual test assertions.
 | libsmpp34 | 27 PDU executables passed | Run individually; `make check` alone has no tests |
 | OsmoHLR | 8 passed, 1 skipped | Default mDNS client fixture skipped |
 | OsmoMSC | 5 passed, 13 skipped | GNU linker wrapping unavailable on Darwin |
-| Repository orchestration | 11 tests passed | Profile rejection, locked rendering, ownership, VTY framing and publication checks |
+| Repository orchestration | 12 tests passed | Profile rejection, locked rendering, ownership, VTY framing and publication checks |
 
 The skips are not passing tests. In particular, the MSC suite's wrapped
 call/VLR/SMS-queue cases were not exercised by that suite on Darwin.
+
+The first cloud build exposed a separate hosted-runner timing limit: the strict
+raw timerfd program observed initial 100 ms intervals at 175 ms and 166 ms,
+and a 150 ms shot at 223 ms. Its other checks completed, but the program failed.
+The cloud workflow explicitly omits that whole standalone program in both
+prefixes, records the skips and retains the event-loop callback check. The
+physical-host results above include the unmodified strict test. A cloud build
+result therefore does not validate those timer semantics or real-time behavior.
 
 ## Automated runtime checks
 

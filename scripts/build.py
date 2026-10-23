@@ -104,7 +104,13 @@ def prepare_core(lock):
     write_json(marker, expected)
 
 
-def build_all(jobs=4, start_from=None):
+def require_timer_callbacks(text):
+    # The port's callback test prints its count but always exits zero.
+    if not re.search(r"^ticks=6 in 2\.6 s \(expected 1 \+ 5\)$", text, re.M):
+        raise RuntimeError("Timerfd event-loop test did not report the expected six callbacks")
+
+
+def build_all(jobs=4, start_from=None, skip_raw_timer_test=False):
     if platform.system() != "Darwin" or platform.machine() != "arm64":
         raise ValueError("The native build requires Apple Silicon macOS")
     state = state_dir()
@@ -118,7 +124,7 @@ def build_all(jobs=4, start_from=None):
     logs = state / "logs/build"
     logs.mkdir(parents=True,exist_ok=True)
     report_path = state / "build-report.json"
-    report = {"sources":lock["sources"], "steps":[], "complete":False}
+    report = {"sources":lock["sources"], "steps":[], "skipped_checks":[], "complete":False}
     if report_path.exists():
         old = json.loads(report_path.read_text())
         if old["sources"] != report["sources"]:
@@ -203,7 +209,16 @@ def build_all(jobs=4, start_from=None):
                 binary = dest / test
                 flags = shlex.split(subprocess.check_output(["pkg-config","--cflags","--libs","libosmocore"],env=env,text=True))
                 run(label+"-"+test+"-build",["clang","-O2","-I"+str(target / "include"),str(port / "tests" / (test+".c")),"-o",binary,*flags],dest,env)
-                run(label+"-"+test,[binary],dest,env,30)
+                if skip_raw_timer_test and test == "darwin_timerfd_test":
+                    skipped = {"name":label+"-"+test,
+                               "reason":"Standalone raw timerfd test explicitly omitted; VM timing is not validated"}
+                    report["skipped_checks"].append(skipped)
+                    write_json(report_path, report)
+                    print("SKIP " + skipped["name"] + ": " + skipped["reason"], flush=True)
+                else:
+                    run(label+"-"+test,[binary],dest,env,30)
+                    if test == "darwin_timerfd_osmo_fd_test":
+                        require_timer_callbacks((logs / (label+"-"+test+".log")).read_text())
     report["complete"] = True
     write_json(report_path,report)
     print("Native build complete. Reports and private build logs: " + str(state),flush=True)

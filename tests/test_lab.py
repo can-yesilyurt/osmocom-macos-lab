@@ -14,6 +14,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import check_publication
+from build import require_timer_callbacks
 import common
 import configure
 import runtime
@@ -187,6 +188,13 @@ class PublicationTests(unittest.TestCase):
         self.assertTrue(check_publication.issues("note.txt", ("9" * 15).encode()))
         self.assertTrue(check_publication.issues("note.txt", ("serial=" + "0" * 16).encode()))
         self.assertEqual(check_publication.issues("README.md", b"Use MSISDN 1001 to call 1002."), [])
+
+
+class BuildChecks(unittest.TestCase):
+    def test_zero_exit_timer_program_requires_real_callbacks(self):
+        require_timer_callbacks("setup rc=0\nticks=6 in 2.6 s (expected 1 + 5)\n")
+        with self.assertRaisesRegex(RuntimeError, "expected six callbacks"):
+            require_timer_callbacks("setup rc=-1\nticks=0 in 2.6 s (expected 1 + 5)\n")
 
 
 if __name__ == "__main__":

@@ -63,6 +63,17 @@ moving to another path. Changing a pin also requires a separate state directory.
 Homebrew libraries are not vendored and may change after `brew upgrade`; rerun
 doctor, the relevant build checks and the native smoke check after such changes.
 
+The optional `--skip-raw-timer-test` switch omits the standalone timerfd program
+in both prefixes and records those omissions in `skipped_checks`. The default
+build runs it. The cloud workflow uses this switch because the hosted VM missed
+the program's strict 80–120 ms interval bounds in an observed run. The omitted
+program also contains coalescing, close/reuse and fork checks, so none of its
+checks count as CI passes. Event-loop timer callbacks and sockaddr checks still
+run, followed by all supported component suites and the native core smoke test.
+The callback test's printed count is checked explicitly because its upstream
+program returns zero even when the count is wrong. Use the default build on the
+physical host to retain the full selected regression set.
+
 ## Checks run by the builder
 
 The build fails on a nonzero check result. Most component suites use `make check`;

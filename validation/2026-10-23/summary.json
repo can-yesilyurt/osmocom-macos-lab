@@ -22,14 +22,19 @@
     "complete": true,
     "recorded_commands": 123,
     "failed_commands": 0,
-    "orchestration_tests_passed": 11,
+    "orchestration_tests_passed": 12,
     "native_smoke_passed": true,
-    "core_links": ["MSC/STP M3UA active", "MSC/HLR GSUP connected", "BSC/MSC BSSMAP connected"],
+    "core_links": [
+      "MSC/STP M3UA active",
+      "MSC/HLR GSUP connected",
+      "BSC/MSC BSSMAP connected"
+    ],
     "duplicate_launcher_preserved_core": true,
     "bts_vty_configuration_test_passed": true,
     "sdr_opened_during_smoke": false,
     "rf_enabled_during_smoke": false,
-    "handset_acceptance_repeated_on_portable_build": false
+    "handset_acceptance_repeated_on_portable_build": false,
+    "timer_callback_count_asserted_after_initial_build": true
   },
   "native_handset_session": {
     "build": "Original staged native build using the same pinned component revisions",
@@ -54,5 +59,16 @@
     "subscriber_databases_published": false,
     "hardware_serial_published": false
   },
-  "ci_results_inferred_from_local_checks": false
+  "ci_results_inferred_from_local_checks": false,
+  "cloud_timing_limit": {
+    "observed_raw_timer_test_passed": false,
+    "observed_100ms_intervals_ms": [
+      175,
+      166
+    ],
+    "observed_150ms_shot_ms": 223,
+    "ci_omits_standalone_raw_timer_program_in_both_prefixes": true,
+    "default_physical_host_build_omits_it": false,
+    "event_loop_callback_count_still_required": 6
+  }
 }
