@@ -1,6 +1,7 @@
 """Paths and profile validation shared by the build and foreground launchers."""
 from pathlib import Path
 import json
+import ipaddress
 import os
 import re
 import subprocess
@@ -17,6 +18,8 @@ DEFAULT_PORTS = {
     "msc_vty": 4254, "msc_ctrl": 4255, "msc_encap": 9898, "smpp": 2775,
     "bts_vty": 4241, "bts_ctrl": 4238, "trx_vty": 4237, "trx_ctrl": 4236,
     "trx_base": 15700, "bts_base": 15800,
+    "pcu_vty": 4240, "sgsn_vty": 4245, "sgsn_ctrl": 4251,
+    "ggsn_vty": 4260, "ggsn_ctrl": 4257, "sgsn_ns": 23000, "pcu_ns": 23001,
 }
 
 
@@ -51,6 +54,26 @@ def load_profile(path=None):
         raise ValueError("max_power_reduction_db must be even (the BSC uses 2 dB steps)")
     if type(p["auto_create_subscribers"]) is not bool:
         raise ValueError("auto_create_subscribers must be true or false")
+    if type(p["gprs_enabled"]) is not bool:
+        raise ValueError("gprs_enabled must be true or false")
+    if type(p["accept_any_apn"]) is not bool:
+        raise ValueError("accept_any_apn must be true or false")
+    if not isinstance(p["apn"], str) or len(p["apn"]) > 63 or not re.fullmatch(r"[a-z0-9]+(?:[-.][a-z0-9]+)*", p["apn"]):
+        raise ValueError("apn must be a lowercase APN of at most 63 characters")
+    if not isinstance(p["data_network"], str):
+        raise ValueError("data_network must be an IPv4 CIDR string")
+    network = ipaddress.IPv4Network(p["data_network"], strict=True)
+    private = [ipaddress.IPv4Network(n) for n in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")]
+    if not 24 <= network.prefixlen <= 29 or not any(network.subnet_of(n) for n in private):
+        raise ValueError("data_network must be an RFC1918 IPv4 subnet with prefix length 24..29")
+    if not isinstance(p["dns_servers"], list) or len(p["dns_servers"]) != 2:
+        raise ValueError("dns_servers must contain two IPv4 DNS addresses")
+    for value in p["dns_servers"]:
+        address = ipaddress.IPv4Address(value)
+        if not isinstance(value, str) or address.is_multicast or address.is_unspecified or address.is_loopback:
+            raise ValueError("Invalid IPv4 DNS address")
+    if type(p["data_mtu"]) is not int or not 576 <= p["data_mtu"] <= 1500:
+        raise ValueError("data_mtu must be an integer in 576..1500")
     if not isinstance(p["operator_name"], str) or not re.fullmatch(r"[A-Za-z0-9 _-]{1,16}", p["operator_name"]):
         raise ValueError("operator_name must contain 1-16 ASCII letters, digits, spaces, _ or -")
     if not isinstance(p["device_args"], str) or any(c in p["device_args"] for c in "\n\r\0"):
@@ -68,6 +91,8 @@ def load_profile(path=None):
     tcp = [4222, 3002, 3003] + [v for k,v in ports.items() if k.endswith(("_vty","_ctrl")) or k == "smpp"]
     udp_keys = ["stp_encap","bsc_encap","msc_encap","mgw_bsc_mgcp","mgw_msc_mgcp","bsc_mgcp_client","msc_mgcp_client"]
     udp = [ports[k] for k in udp_keys] + [ports[k]+i for k in ("trx_base","bts_base") for i in range(3)]
+    if p["gprs_enabled"]:
+        udp += [2123, 2152, 3386, ports["sgsn_ns"], ports["pcu_ns"]]
     if len(tcp) != len(set(tcp)) or len(udp) != len(set(udp)):
         raise ValueError("Conflicting management or UDP ports")
     ranges = [(ports[f"mgw_{s}_rtp_first"], ports[f"mgw_{s}_rtp_last"]) for s in ("bsc","msc")]

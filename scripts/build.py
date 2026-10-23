@@ -32,6 +32,17 @@ STAGES = [
     ("hlr","osmo-hlr","core",["bsc"],["--with-systemdsystemunitdir=no"],[]),
     ("msc","osmo-msc","core",["bsc"],["--enable-smpp","--disable-iu","--with-systemdsystemunitdir=no"],[]),
 ]
+PACKET_STAGES = [
+    ("ggsn","osmo-ggsn","packet",["bsc"],["--disable-doxygen"],[]),
+    ("pcu","osmo-pcu","packet",["trx"],["--disable-doxygen"],[]),
+    ("sgsn","osmo-sgsn","packet",["core","bsc"],["--disable-iu","--disable-doxygen"],[]),
+]
+
+
+def require_compatible_sources(previous, current):
+    """New dependencies may extend a build, but existing revisions cannot drift."""
+    if any(current.get(name) != entry for name, entry in previous.items()):
+        raise ValueError("Build provenance has different source pins; use a separate state directory")
 
 
 def fetch_sources(lock):
@@ -110,7 +121,7 @@ def require_timer_callbacks(text):
         raise RuntimeError("Timerfd event-loop test did not report the expected six callbacks")
 
 
-def build_all(jobs=4, start_from=None, timer_checks="strict"):
+def build_all(jobs=4, start_from=None, timer_checks="strict", with_gprs=False):
     if timer_checks not in ("strict", "functional"):
         raise ValueError("Timer checks must be strict or functional")
     if platform.system() != "Darwin" or platform.machine() != "arm64":
@@ -126,16 +137,16 @@ def build_all(jobs=4, start_from=None, timer_checks="strict"):
     logs = state / "logs/build"
     logs.mkdir(parents=True,exist_ok=True)
     report_path = state / "build-report.json"
-    report = {"sources":lock["sources"], "steps":[], "timer_checks_requested":timer_checks,
+    report = {"sources":lock["sources"], "steps":[], "timer_checks_requested":timer_checks,"with_gprs":with_gprs,
               "skipped_checks":[], "complete":False}
     if report_path.exists():
         old = json.loads(report_path.read_text())
-        if old["sources"] != report["sources"]:
-            raise ValueError("Build provenance has different source pins; use a separate state directory")
+        require_compatible_sources(old["sources"], report["sources"])
         report["steps"] = old["steps"]
         report["skipped_checks"] = old.get("skipped_checks", [])
     source_root = state / "sources"
-    names = [s[0] for s in STAGES]
+    stages = STAGES + (PACKET_STAGES if with_gprs else [])
+    names = [s[0] for s in stages]
     if start_from and start_from not in names:
         raise ValueError("Unknown --from stage; choose " + ", ".join(names))
     first = names.index(start_from) if start_from else 0
@@ -165,7 +176,7 @@ def build_all(jobs=4, start_from=None, timer_checks="strict"):
             print(log.read_text(errors="replace")[-7000:])
             raise RuntimeError("Build/check failed; see " + str(log))
 
-    for label,name,group,dependencies,options,tests in STAGES[first:]:
+    for label,name,group,dependencies,options,tests in stages[first:]:
         target = prefix(group)
         target.mkdir(parents=True,exist_ok=True)
         includes = [target,*[prefix(d) for d in dependencies]]

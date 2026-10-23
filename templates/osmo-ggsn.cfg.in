@@ -1,0 +1,23 @@
+log stderr
+ logging color 0
+ logging timestamp 1
+ logging level set-all info
+line vty
+ bind 127.0.0.1 @GGSN_VTY@
+ctrl
+ bind 127.0.0.1 @GGSN_CTRL@
+ggsn lab
+ gtp state-dir @GGSN_DATA_DIR@
+ gtp bind-ip 127.0.0.1
+ apn @APN@
+  gtpu-mode tun
+  tun-device osmolab
+  type-support v4
+  mtu @DATA_MTU@ apply
+  ip prefix dynamic @DATA_NETWORK@
+  ip dns 0 @DNS_0@
+  ip dns 1 @DNS_1@
+  ip ifconfig @DATA_GATEWAY_CIDR@
+  no shutdown
+ default-apn @APN@
+ no shutdown ggsn

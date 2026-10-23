@@ -2,8 +2,9 @@
 
 All commands below run from the checkout root. Use the same `OSMO_LAB_STATE`
 and `OSMO_LAB_PROFILE` in every terminal, or leave both unset for the defaults
-`.lab/` and `lab.json`. The configured services and media interfaces bind to
-loopback. This recipe runs all components on one Mac.
+`.lab/` and `lab.json`. The voice services, management ports and media interfaces
+bind to loopback. The optional PCU's NS UDP listener uses a wildcard address;
+see [GPRS bindings and setup](GPRS.md). This recipe runs all components on one Mac.
 
 ## Local profile
 

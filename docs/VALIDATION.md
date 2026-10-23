@@ -136,3 +136,37 @@ interconnect, emergency services or long-term call/SMS reliability. A useful nex
 hardware acceptance run would repeat registration, calls and SMS using the
 portable build and record duration, counters and any USB warnings without
 publishing subscriber data.
+
+## Optional packet-data bring-up
+
+The optional GPRS stages were subsequently built on the same physical host,
+using three additional source pins without changing the original thirteen.
+The combined build report contains **141 commands with exit code 0**, including
+18 commands for GGSN, PCU and SGSN. Selected component results were GGSN 6 passed;
+PCU 11 passed / 3 skipped; SGSN 5 passed / 2 skipped. The skips require GNU linker
+wrapping, and external Python/TTCN integration suites were not run.
+Repository orchestration checks passed 19 tests after the packet extension.
+
+All three packet daemons parsed their rendered configurations. The seven-child
+core connected both MSC and SGSN to HLR. With the LimeSDR open and RF locked,
+PCU connected to BTS; both NS peers reported ALIVE / UNBLOCKED, and SGSN's BSSGP
+cell BVC reported UNBLOCKED. The temporary Mac gateway created its `utun`
+interface, enabled forwarding and installed NAT in its own PF anchor while
+preserving the default route.
+
+The carrier subsequently reached Enabled / Unlocked / OK with the PHY connected,
+and PCU reported PDCH enabled on timeslots 6 and 7. Handset attachment and data
+acceptance on this packet profile are still pending.
+
+A synthetic native `libgtp` probe subsequently obtained a PDP address, received
+a DNS A response, completed a TCP handshake and received an HTTP 403 response
+from the chosen HTTP destination. This establishes a DNS and TCP/HTTP return
+path through the gateway; the 403 is not a successful page status. It does not
+exercise the real SGSN, PCU, radio, handset, TLS or a sustained transfer.
+
+The upstream SGSN-emulator ICMP probe received no replies. The original Mac
+firewall block-all and stealth settings were in place during the successful
+DNS/TCP/HTTP exchange. Two brief block-all comparisons restored the prior
+setting and did not resolve the initial ICMP/TCP probe failures. No permanent
+firewall-mode change was needed. See [GPRS operation](GPRS.md) for the separate
+gateway and handset acceptance steps.

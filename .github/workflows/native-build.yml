@@ -2,6 +2,12 @@ name: Native ARM64 build
 
 on:
   workflow_dispatch:
+    inputs:
+      with_gprs:
+        description: Build and run regression checks for optional packet components
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -23,10 +29,27 @@ jobs:
       - name: Host and dependencies
         run: ./lab doctor
       - name: Build and run component checks (functional timer checks on VM)
-        run: ./lab build --jobs 3 --timer-checks functional
+        env:
+          WITH_GPRS: ${{ inputs.with_gprs }}
+        run: |
+          if [ "$WITH_GPRS" = "true" ]; then
+            ./lab build --jobs 3 --timer-checks functional --with-gprs
+          else
+            ./lab build --jobs 3 --timer-checks functional
+          fi
       - name: Render example profile with RF locked
         run: |
           cp lab.example.json lab.json
           ./lab configure
       - name: Native core and BTS configuration smoke check (no SDR)
         run: python3 -B scripts/smoke_native.py
+      - name: Compile optional gateway protocol probe (no network setup)
+        if: ${{ inputs.with_gprs }}
+        run: |
+          python3 -B - <<'PY'
+          import sys
+          sys.path.insert(0, "scripts")
+          from common import state_dir
+          from packet_probe import build_http_probe
+          build_http_probe(state_dir())
+          PY

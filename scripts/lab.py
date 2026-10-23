@@ -37,14 +37,23 @@ def main():
     build = sub.add_parser("build",help="fetch pinned sources, build and run component regression checks")
     build.add_argument("--jobs",type=int,default=4)
     build.add_argument("--from",dest="start_from")
+    build.add_argument("--with-gprs", action="store_true", help="also build GGSN, PCU and the 2G-only SGSN")
     build.add_argument("--timer-checks", choices=["strict", "functional"], default="strict",
                        help="strict port tests (default), or functional timer checks without latency assertions for VMs")
     sub.add_parser("configure",help="render local configurations with RF locked")
-    core = sub.add_parser("core",help="run STP, two MGWs, HLR, MSC and BSC in the foreground")
+    core = sub.add_parser("core",help="run the voice core and optional SGSN in the foreground")
     core.add_argument("--check",action="store_true",help="start a temporary core, check links, then stop")
     sub.add_parser("trx",help="run the LimeSuite transceiver in the foreground")
     sub.add_parser("bts",help="run the BTS in the foreground")
+    sub.add_parser("pcu",help="run the native GPRS packet control unit")
     sub.add_parser("status",help="read the existing network and RF state")
+    sub.add_parser("packet-status",help="read packet core and radio counters")
+    probe = sub.add_parser("packet-probe",help="test GGSN/internet with synthetic traffic; real core must be stopped")
+    probe.add_argument("--target",default="1.1.1.1")
+    probe.add_argument("--http",action="store_true",help="test DNS, TCP and HTTP instead of ICMP")
+    probe.add_argument("--host",default="neverssl.com",help="HTTP destination; used with --http")
+    net = sub.add_parser("network",help="temporary GGSN tunnel and scoped macOS internet NAT")
+    net.add_argument("action", choices=["start","stop","status"])
     rf = sub.add_parser("rf",help="explicit RF control on the already running lab")
     rf.add_argument("action",choices=["on","off"])
     args = parser.parse_args()
@@ -54,15 +63,22 @@ def main():
         elif args.command == "build":
             if not 1 <= args.jobs <= 64: raise ValueError("--jobs must be in 1..64")
             from build import build_all
-            build_all(args.jobs,args.start_from,args.timer_checks)
+            build_all(args.jobs,args.start_from,args.timer_checks,args.with_gprs)
         elif args.command == "configure":
             from configure import render
             render()
+        elif args.command == "network":
+            from network import network
+            return network(args.action)
+        elif args.command == "packet-probe":
+            from packet_probe import probe
+            return probe(args.target,args.http,args.host)
         else:
-            from runtime import run_core, run_radio, show_status, set_rf
+            from runtime import run_core, run_radio, show_status, set_rf, packet_status
             if args.command == "core": return run_core(args.check)
-            if args.command in ("trx","bts"): return run_radio(args.command)
+            if args.command in ("trx","bts","pcu"): return run_radio(args.command)
             if args.command == "status": return show_status()
+            if args.command == "packet-status": return packet_status()
             if args.command == "rf": return set_rf(args.action)
         return 0
     except (OSError,ValueError,RuntimeError,subprocess.CalledProcessError) as exc:

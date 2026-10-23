@@ -10,7 +10,8 @@ No previous lab directory or preinstalled Osmocom build is required.
 Use Apple Silicon macOS, a native ARM64 Homebrew installation, Xcode Command
 Line Tools and Python 3. The orchestration uses Python's standard library only.
 Install the build/runtime dependencies with `brew bundle --file=Brewfile`, then
-run `./lab doctor`. There is no `sudo` step in the build or launchers.
+run `./lab doctor`. Builds and voice/SMS launchers do not require `sudo`.
+The optional GPRS network helper needs root for its tunnel and forwarding/NAT.
 
 The physical test machine used macOS 27.0.1 and Apple clang 21.0.0. The manual
 native CI job targets GitHub's ARM64 `macos-26` runner. A clean build and core
@@ -31,6 +32,7 @@ Use a separate state directory for another checkout or source revision.
 | `local/bts` | SCTP-disabled libosmo-netif, libosmo-abis, OsmoBTS | Links to the radio core prefix |
 | `local/bsc` | SCTP shim, SCTP-enabled core/netif/Abis, SIGTRAN/STP, MGW, BSC | Core transport and BSC media |
 | `local/core` | libsmpp34, HLR, MSC | Links to the BSC dependency prefix |
+| `local/packet` (optional) | GGSN/libgtp, PCU, SGSN | GPRS packet service; PCU links to the radio core, SGSN/GGSN to core-side dependencies |
 
 The source ports supply Darwin timerfd emulation, SCTP compatibility and other
 platform changes. `scripts/build.py` applies the pinned libosmocore port files and
@@ -41,7 +43,9 @@ fork happens to contain historical build output.
 TRX uses the LimeSuite backend, 4 samples per symbol and the scalar processing
 path. UHD, USRP1, BladeRF, IPC, multi-TRX and optional NEON/SSE paths are disabled
 in this recipe. BTS uses the TRX backend without oRTP, DAHDI or E1D. MSC has SMPP
-enabled and Iu disabled. The profile has GPRS disabled.
+enabled and Iu disabled. The example profile has GPRS disabled. Build the packet
+components with `./lab build --with-gprs --jobs 6`, then follow
+[GPRS setup](GPRS.md). SGSN also has Iu disabled; this recipe provides 2G only.
 
 ## Interrupted builds
 
@@ -56,8 +60,11 @@ and use the stage's base name:
 
 Stage names in order are `core-radio`, `trx`, `netif-radio`, `abis-radio`, `bts`,
 `sctp`, `core-cn`, `netif-cn`, `abis-cn`, `sigtran`, `mgw`, `bsc`, `smpp`, `hlr`,
-`msc`. Resume assumes earlier dependencies were built successfully. Keep logs
-local: they include absolute machine paths.
+`msc`. With `--with-gprs`, `ggsn`, `pcu` and `sgsn` follow. An existing voice build
+can add those stages with `./lab build --with-gprs --from ggsn --jobs 6`.
+Resume assumes earlier dependencies were built successfully. Adding immutable
+source entries is allowed; changing or removing existing pins still requires a
+fresh state directory. Keep logs local: they include absolute machine paths.
 
 The state directory is **not relocatable** after installation because Mach-O
 dylib install names include the prefix. Rebuild in a new state directory after
@@ -118,3 +125,6 @@ original projects in [NOTICE](../NOTICE) and [porting notes](PORTING.md).
 | [libsmpp34](https://github.com/AndreiGosman/libsmpp34-macos-arm64) | 1.14.6 | [`004e7ab62665`](https://github.com/AndreiGosman/libsmpp34-macos-arm64/tree/004e7ab626652d21373c21d4fe2aaa251d032de7) |
 | [osmo-hlr](https://github.com/AndreiGosman/osmo-hlr-macos-arm64) | 1.9.4 | [`b7b745e661ae`](https://github.com/AndreiGosman/osmo-hlr-macos-arm64/tree/b7b745e661ae388c8a7429b8fbf6b6ae5df7eb79) |
 | [osmo-msc](https://github.com/AndreiGosman/osmo-msc-macos-arm64) | 1.16.0 | [`6b44a1ec3061`](https://github.com/AndreiGosman/osmo-msc-macos-arm64/tree/6b44a1ec306115fb08d6de4b6f9ea4e8f22176df) |
+| [osmo-ggsn](https://github.com/AndreiGosman/osmo-ggsn-macos-arm64) (optional) | 1.15.0 | [`8a5ae376d08a`](https://github.com/AndreiGosman/osmo-ggsn-macos-arm64/tree/8a5ae376d08a4bfaf07c0be75e550ea22df9b792) |
+| [osmo-pcu](https://github.com/AndreiGosman/osmo-pcu-macos-arm64) (optional) | 1.5.3 | [`1ca6b64091e2`](https://github.com/AndreiGosman/osmo-pcu-macos-arm64/tree/1ca6b64091e2f4146c9e3576d69165a437b9073a) |
+| [osmo-sgsn](https://github.com/AndreiGosman/osmo-sgsn-macos-arm64) (optional) | 1.13.2 | [`3ee9dc84a3bc`](https://github.com/AndreiGosman/osmo-sgsn-macos-arm64/tree/3ee9dc84a3bca5535d196b0c718b6842d1397d0a) |

@@ -1,0 +1,12 @@
+log stderr
+ logging color 0
+ logging timestamp 1
+ logging level set-all info
+line vty
+ bind 127.0.0.1 @PCU_VTY@
+pcu
+ pcu-socket @PCU_SOCKET@
+ flow-control-interval 10
+ cs 2
+ alloc-algorithm dynamic
+ gamma 0

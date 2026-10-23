@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-23",
+  "status": "experimental_packet_profile_handset_acceptance_pending",
+  "build": {
+    "commands_total": 141,
+    "packet_commands_added": 18,
+    "all_exit_zero": true,
+    "source_pins_total": 16,
+    "existing_source_pins_changed": false
+  },
+  "regressions": {
+    "ggsn": {
+      "passed": 6,
+      "skipped": 0
+    },
+    "pcu": {
+      "passed": 11,
+      "skipped": 3
+    },
+    "sgsn": {
+      "passed": 5,
+      "skipped": 2
+    },
+    "orchestration": {
+      "passed": 19
+    }
+  },
+  "control_plane": {
+    "msc_hlr": "connected",
+    "bsc_msc_bssmap": "connected",
+    "sgsn_hlr": "connected",
+    "pcu_bts": "connected",
+    "ns": "alive_unblocked",
+    "cell_bvc": "unblocked"
+  },
+  "gateway": {
+    "native_utun_created": true,
+    "ipv4_forwarding_enabled": true,
+    "nat_scoped_to_data_pool": true,
+    "default_route_preserved": true,
+    "original_firewall_mode_restored": true
+  },
+  "synthetic_probe": {
+    "real_subscribers_used": false,
+    "pdp_context_accepted": true,
+    "dns_a_response_received": true,
+    "tcp_handshake_completed": true,
+    "http_response_received": true,
+    "http_status": 403,
+    "successful_page_status": false,
+    "icmp_replies": 0,
+    "radio_tested": false,
+    "handset_tested": false,
+    "tls_tested": false,
+    "throughput_tested": false
+  },
+  "radio": {
+    "carrier_state": "enabled_unlocked_ok",
+    "phy_connected": true,
+    "pdch_timeslots": [
+      6,
+      7
+    ],
+    "independent_rf_measurement": false
+  },
+  "handset": {
+    "packet_registration": "pending",
+    "pdp_activation": "pending",
+    "internet_request": "pending"
+  },
+  "cleanup": {
+    "unit_scope_check": "passed",
+    "live_stop_restore_cycle": "not_yet_run"
+  }
+}

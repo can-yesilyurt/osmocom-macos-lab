@@ -5,7 +5,9 @@
 
 Build and run a local Osmocom 2G network on macOS with a **LimeSDR-USB**, using
 OsmoTRX-LMS, OsmoBTS, OsmoBSC, OsmoSTP, OsmoMSC, OsmoHLR and two OsmoMGWs.
-The daemons run as native ARM64 processes without a VM, container or root access.
+The voice/SMS daemons run as native ARM64 processes without a VM, container or
+root access. An optional GPRS gateway adds OsmoPCU, OsmoSGSN and OsmoGGSN;
+its Mac tunnel and temporary forwarding/NAT require administrator access.
 
 **Bring-up result:** two iPhones registered on the native macOS network. The
 operator confirmed successful calls and SMS between them. A fresh build of the
@@ -32,8 +34,9 @@ An independent clean build and core-only smoke check also
 [passed on a hosted ARM64 Mac running macOS 26.6.2](https://github.com/can-yesilyurt/osmocom-macos-lab/actions/runs/39931415240),
 using the functional CI timer mode and no SDR. Radio operation on other Macs,
 macOS releases, radios and bands needs its own validation. This recipe currently
-accepts GSM900 ARFCNs 1–124. GPRS/EDGE, 3G/LTE/5G, roaming and
-external telephone interconnect are outside the tested profile.
+accepts GSM900 ARFCNs 1–124. Optional GPRS preparation and its separate validation
+scope are described in [the packet-data guide](docs/GPRS.md). EDGE, 3G/LTE/5G,
+roaming and external telephone interconnect are outside the tested profile.
 
 ## Build
 
@@ -58,8 +61,10 @@ Set the same `OSMO_LAB_STATE` in every terminal. Omit it to keep all state in
 `.lab/` under a sufficiently short checkout. Once built, keep the state directory
 at that path: installed dylibs contain absolute install names.
 
-The build downloads **13 checkouts pinned to full Git commits**, uses four
-separate library prefixes, and runs the supported component regression checks.
+The source lock contains **16 checkouts pinned to full Git commits**: 13 for the
+voice/SMS stack and three optional packet components. The default build uses
+four separate library prefixes; `--with-gprs` adds a fifth. The builder runs the
+supported component regression checks.
 Homebrew dependencies are version-recorded in the validation report rather than
 locked. See [build details and resuming a build](docs/BUILD.md).
 
@@ -107,6 +112,10 @@ press Ctrl+C in the BTS, TRX and core terminals, in that order. `core --check`
 starts a temporary core and stops it after checking links. Use `status` to inspect
 a core that is already running.
 
+For cellular internet through the Mac, follow [the GPRS guide](docs/GPRS.md).
+It covers the optional build, APN, two packet timeslots, gateway test, handset
+acceptance and restoration of the Mac's previous networking settings.
+
 ## Topology
 
 ```mermaid
@@ -146,6 +155,6 @@ ignored local state. Never attach raw HLR/MSC logs or databases to public issues
 they can contain subscriber identifiers and message content. Publish a redacted
 summary like the [included validation snapshot](validation/2026-10-23/summary.json).
 
-The [MIT license](LICENSE) covers this repository's original orchestration and
+The [MIT license](LICENSE) covers this repository's original orchestration, tests and
 documentation. External sources and their modifications retain their own
 licenses; see [NOTICE](NOTICE).

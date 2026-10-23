@@ -14,10 +14,12 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 import check_publication
-from build import require_timer_callbacks
+from build import require_timer_callbacks, require_compatible_sources
 import common
 import configure
 import runtime
+import network
+from packet_probe import parse_output,parse_http_output
 import vty
 
 
@@ -67,6 +69,60 @@ class LocalState(unittest.TestCase):
         self.change(arfcn=30)
         with self.assertRaisesRegex(ValueError, "Profile changed"):
             configure.require_config()
+
+    def test_gprs_render_reserves_data_slots_and_enables_packet_subscribers(self):
+        self.change(gprs_enabled=True)
+        self.render()
+        cfg = common.state_dir() / "configs"
+        bsc = (cfg / "osmo-bsc.cfg").read_text()
+        self.assertIn("gprs mode gprs", bsc)
+        self.assertEqual(bsc.count("phys_chan_config PDCH"), 2)
+        self.assertEqual(bsc.count("phys_chan_config TCH/F"), 4)
+        self.assertIn("rf_locked 1", bsc)
+        self.assertIn("subscriber-create-on-demand 5 cs+ps", (cfg / "osmo-hlr.cfg").read_text())
+        self.assertIn("ip ifconfig 10.45.0.1/24", (cfg / "osmo-ggsn.cfg").read_text())
+        self.assertIn("authentication optional", (cfg / "osmo-sgsn.cfg").read_text())
+        self.assertEqual(len(list(cfg.glob("*.cfg"))), 11)
+        self.assertNotIn("apn * ggsn 0", (cfg / "osmo-sgsn.cfg").read_text())
+        self.change(accept_any_apn=True)
+        self.render()
+        self.assertIn("apn * ggsn 0", (cfg / "osmo-sgsn.cfg").read_text())
+
+    def test_gprs_profile_rejects_injection_and_broad_or_conflicting_networks(self):
+        original = self.profile.read_text()
+        for fields in [dict(apn="osmo\nno shutdown"), dict(data_network="0.0.0.0/0"),
+                       dict(data_network="10.45.0.1/24"),dict(data_network="127.0.0.0/24"),
+                       dict(data_network="10.0.0.0/8"),dict(data_network=None),
+                       dict(dns_servers=["1.1.1.1\nshutdown","8.8.8.8"]),dict(data_mtu=True),
+                       dict(gprs_enabled=True,ports={"bsc_mgcp_client":2123}),
+                       dict(gprs_enabled=True,ports={"pcu_ns":23000}),dict(accept_any_apn="yes")]:
+            with self.subTest(fields=fields):
+                self.profile.write_text(original)
+                self.change(**fields)
+                with self.assertRaises(ValueError):
+                    self.render()
+
+    def test_pf_rules_scope_nat_to_data_pool_and_keep_tunnel_uplink(self):
+        rules = network.pf_rules("10.45.0.0/24","utun5","utun4",1280)
+        self.assertIn("nat on utun4 inet from 10.45.0.0/24 to any -> (utun4)",rules)
+        self.assertIn("scrub on utun5 inet all max-mss 1240",rules)
+        for tunnel,uplink in [("utun4","utun4"),("utun5","en0\npass all")]:
+            with self.assertRaises(ValueError):
+                network.pf_rules("10.45.0.0/24",tunnel,uplink,1280)
+
+    def test_cleanup_preserves_main_pf_and_unrelated_processes(self):
+        record = dict(anchor=network.ANCHOR,anchor_loaded=True,forwarding_changed=True,
+                      previous_forwarding="0",pf_token="1234",loopback_added=True)
+        (common.state_dir() / "run").mkdir(parents=True)
+        with mock.patch.object(network,"owned_ggsn",return_value=False), \
+             mock.patch.object(network,"run",return_value="") as run, \
+             mock.patch.object(subprocess,"run",return_value=mock.Mock(returncode=0,stderr="")) as command:
+            network.cleanup(record)
+            command.assert_called_once_with(["/sbin/pfctl","-a",network.ANCHOR,"-f","/dev/null"],capture_output=True,text=True)
+            calls = [call.args[0] for call in run.call_args_list]
+            self.assertIn(["/sbin/pfctl","-X","1234"],calls)
+            self.assertIn(["/usr/sbin/sysctl","-w","net.inet.ip.forwarding=0"],calls)
+            self.assertFalse(any("-d" in c or "-F" in c for c in calls))
 
     def test_invalid_profiles_do_not_render(self):
         original = self.profile.read_text()
@@ -191,6 +247,32 @@ class PublicationTests(unittest.TestCase):
 
 
 class BuildChecks(unittest.TestCase):
+    def test_packet_probe_requires_assigned_address_and_real_reply_count(self):
+        # A cause-128 DELETE response is not evidence of PDP creation.
+        rejected = "Received delete PDP context response. Cause value: 128\n3 packets transmitted, 0 packets received\n"
+        self.assertEqual(parse_output(rejected,"10.45.0.0/24"),(False,0))
+        accepted = "Received create PDP context response.\nPDP ctx: received EUA with IP address: 10.45.0.2\n3 packets transmitted, 3 packets received\n"
+        self.assertEqual(parse_output(accepted,"10.45.0.0/24"),(True,3))
+        self.assertEqual(parse_output(accepted,"10.46.0.0/24"),(False,3))
+
+    def test_http_probe_reports_transport_separately_from_server_status(self):
+        text = "RESULT accepted=1 dns_replies=1 tcp=1 http=1 http_status=403\n"
+        result = parse_http_output(text)
+        self.assertTrue(result["context_accepted"])
+        self.assertTrue(result["tcp_connected"])
+        self.assertEqual(result["http_status"],403)
+        result = parse_http_output("PDP creation cause=128\nDNS query sent\n")
+        self.assertFalse(result["http_response"])
+        self.assertIsNone(result["http_status"])
+
+    def test_new_dependencies_preserve_existing_build_provenance(self):
+        original = {"core":{"commit":"a"*40,"version":"1"}}
+        extended = {**original,"packet":{"commit":"b"*40,"version":"1"}}
+        require_compatible_sources(original,extended)
+        for changed in ({}, {"core":{"commit":"c"*40,"version":"1"}}):
+            with self.assertRaisesRegex(ValueError,"different source pins"):
+                require_compatible_sources(original,changed)
+
     def test_zero_exit_timer_program_requires_real_callbacks(self):
         require_timer_callbacks("setup rc=0\nticks=6 in 2.6 s (expected 1 + 5)\n")
         with self.assertRaisesRegex(RuntimeError, "expected six callbacks"):

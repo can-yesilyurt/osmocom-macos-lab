@@ -1,5 +1,6 @@
 """Generate private local configurations; RF is always locked at startup."""
 import hashlib
+import ipaddress
 import json
 import os
 import re
@@ -19,10 +20,31 @@ def render():
         (state / name).mkdir(parents=True,exist_ok=True,mode=0o700)
     values = {k.upper():str(v) for k,v in p.items() if k != "ports"}
     values.update({k.upper():str(v) for k,v in p["ports"].items()})
-    values["SUBSCRIBER_POLICY"] = f"subscriber-create-on-demand {p['msisdn_digits']} cs" if p["auto_create_subscribers"] else "no subscriber-create-on-demand"
+    access = "cs+ps" if p["gprs_enabled"] else "cs"
+    values["SUBSCRIBER_POLICY"] = f"subscriber-create-on-demand {p['msisdn_digits']} {access}" if p["auto_create_subscribers"] else "no subscriber-create-on-demand"
     values["DEVICE_ARGS_LINE"] = " dev-args " + p["device_args"] if p["device_args"] else ""
     values["PCU_SOCKET"] = str(socket_path)
+    network = ipaddress.IPv4Network(p["data_network"])
+    values["DATA_GATEWAY_CIDR"] = str(network.network_address + 1) + "/" + str(network.prefixlen)
+    values["DNS_0"], values["DNS_1"] = p["dns_servers"]
+    values["APN_FALLBACK"] = " apn * ggsn 0" if p["accept_any_apn"] else ""
+    values["DATA_DIR"] = str(state / "data")
+    values["GGSN_DATA_DIR"] = str(state / "data/ggsn")
+    values["SGSN_DATA_DIR"] = str(state / "data/sgsn")
+    values["PDCH_6"] = values["PDCH_7"] = "PDCH" if p["gprs_enabled"] else "TCH/F"
+    gprs = ["gprs mode none"]
+    if p["gprs_enabled"]:
+        gprs = ["gprs mode gprs", "gprs routing area 1", "gprs network-control-order nc0",
+                "gprs cell bvci 2", "gprs nsei 101", "gprs nsvc 0 nsvci 101",
+                f"gprs nsvc 0 local udp port {p['ports']['pcu_ns']}",
+                f"gprs nsvc 0 remote udp port {p['ports']['sgsn_ns']}",
+                "gprs nsvc 0 remote ip 127.0.0.2"]
+    values["GPRS_CONFIG"] = "\n".join("  " + line for line in gprs)
     templates = ["osmo-stp","osmo-bsc","osmo-hlr","osmo-msc","osmo-bts-trx","osmo-trx-lms"]
+    if p["gprs_enabled"]:
+        for side in ("ggsn","sgsn","probe"):
+            (state / "data" / side).mkdir(parents=True,exist_ok=True,mode=0o700)
+        templates += ["osmo-pcu", "osmo-sgsn", "osmo-ggsn"]
     hashes = {}
 
     def save(name,text,substitutions):
